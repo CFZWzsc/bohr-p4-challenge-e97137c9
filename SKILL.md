@@ -1,106 +1,303 @@
 ---
-name: screening-first-literature-review
-description: Use when a batch of literature records must be turned into a cited narrative review, requiring explicit eligibility criteria applied before writing, recorded exclusion reasons, evidence-derived themes, a locatable quote table, per-paragraph citations and honest conflict and gap statements.
+name: deep-research-evidence-review
+description: "面向文献综述与深度研究的证据链工作流：把研究问题拆成子问题，逐条收集来源与段落证据，将每条论断绑定到可核验的 locator 与原文引句，显式保留冲突与覆盖缺口，并输出 result.json、report.md 与 run-review.md。适用于给定文献/材料批次的系统筛选、证据矩阵与带引用综述；不联网、不补造文献。"
 ---
 
-# 筛选优先的文献综述生成
+# 深度研究文献综述 Skill
 
-## 用途与适用条件
+## 用途
 
-当任务给出一批文献记录与一个综述问题，要求产出可复核的综述而不是摘要拼接时使用：先写清纳排标准并逐条筛选，把排除理由留档，再按文献实际词项归纳主题，建立带引句的证据表，最后生成每段可回链的草稿。
+把一批给定材料（`case.json` + `task.md` + 材料文件）转成可复核的文献综述：
 
-**适用前提**：`case.json` 提供综述问题与记录数组（`records`/`papers`/`documents`/`literature`），可选 `criteria`（年份、语言、研究类型、是否要求摘要/全文）。只读题录与摘要级文本。
+- 研究问题与子问题分解；
+- 多来源、段落级证据抽取；
+- 每条论断绑定 `source_id`、`locator` 与逐字 `quote`；
+- 来源间矛盾显式并列，不静默裁决；
+- 逐子问题覆盖评估（covered / thin / gap）；
+- 结构化综合叙述、局限、不确定性与运行日志；
+- 输出 `result.json`、`report.md`、`run-review.md` 三个可交付物。
 
-**不适用**：单篇精读、方法学审查、查重、语言润色、替作者下研究结论。不联网检索，不补造未提供的文献。
+本 Skill 只做“给定语料内的证据整理”，不做联网检索，不补造文献，不把缺失证据写成领域结论。
 
-## 输入
+## 适用条件
 
-| 输入 | 说明 |
+- 已提供研究问题（或 `task.md` 可提取问题）与至少一份材料；
+- 材料形态为 `json` / `jsonl` / `ndjson` / `xml` / `csv` / `tsv` / `txt` / `md` / `pdf`；
+- 需要逐条引用、证据定位、冲突保留与覆盖缺口审计；
+- 需要离线、确定性、仅标准库运行的环境。
+
+## 不适用场景
+
+- 要求联网检索、补全外部文献、验证文献真实性或撤稿状态；
+- 要求做全文方法学质量评价、偏倚风险评估、GRADE 分级或双人独立筛选；
+- 输入只有研究问题、没有任何来源，却要求给出领域结论；
+- 要求生成真实临床/政策建议并据此作决策；
+- 要求修改或裁决互相矛盾的原始研究结论（本 Skill 只并列呈现）。
+
+## 输入形态
+
+```text
+<input>/
+  case.json          # 必需；缺失时按空输入处理，仍退出 0
+  task.md            # 可选；case.json 无研究问题时兜底
+  materials/         # 可选；递归读取支持的格式
+```
+
+`case.json` 常用字段（均可缺省，工具会做容错与别名匹配）：
+
+```json
+{
+  "case_id": "case-001",
+  "research_question": "研究问题",
+  "sub_questions": [{"id": "Q1", "question": "子问题"}],
+  "sources": [
+    {"source_id": "S1", "title": "...", "abstract": "...", "doi": "...", "year": 2024,
+     "venue": "...", "study_type": "...", "reliability": "high"}
+  ],
+  "criteria": {"include": "...", "exclude": "..."},
+  "output_contract": {
+    "report": "string", "findings": "array", "references": "array",
+    "citations": "array", "gaps": "array", "notes": "array", "status": "string"
+  }
+}
+```
+
+材料文件会被递归读取；JSON/JSONL/CSV/XML 中的记录型条目逐条成为来源，纯文本与 Markdown 按段落/小节切分，PDF 使用内置增量文本抽取并带低置信度标记。
+
+## 调用方式
+
+标准运行命令（写在容器 `/skills/weekly-skill` 时）：
+
+```bash
+python /skills/weekly-skill/scripts/run_skill.py --input /input --work /app/work --out /app/output
+```
+
+本包内相对路径运行：
+
+```bash
+python scripts/run_skill.py --input /input --work /app/work --out /app/output
+```
+
+演示案例：
+
+```bash
+python scripts/run_skill.py --input examples/demo-case --work /app/work --out /app/output
+```
+
+参数：
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `--input` | `/input` | 输入目录，或直接指向 `case.json` |
+| `--work` | `/app/work` | 工作目录（只用于兜底与中间状态） |
+| `--out` | `/app/output` | 输出目录，或直接指向 `result.json` |
+| `--output` | 同上 | `--out` 的别名 |
+
+脚本总是退出码 0，并总是尝试写出 `result.json`、`report.md`、`run-review.md`。即使输入为空或损坏，也会写出诚实的状态与错误记录。
+
+## 检索与证据流程
+
+流程固定为六步，全部离线、确定性：
+
+1. **Question decomposition（问题拆解）**
+   - 从 `case.json` 读取研究问题；缺失时取 `task.md` 第一条有效正文。
+   - 优先采用案例提供的 `sub_questions`；未提供时按“核心证据 / 方法与数据 / 反面证据 / 边界与空白”生成过程性子问题，并标注 `sub_questions_derived=true`。
+2. **Source collection（来源收集）**
+   - 读取 case 记录与输入目录全部支持格式材料。
+   - 每条来源保留 `source_id`、标题、年份、venue、DOI、类型、定位前缀与可靠性（high / medium / low / unknown），可靠性依据写入 `reliability.basis`。
+   - 按 DOI、规范化标题、全文哈希去重；重复项标 `duplicate_of`，不进入证据选择。
+3. **Evidence extraction（证据抽取）**
+   - 按字段/小节切句，跳过 references、acknowledgements、funding 等非证据段落。
+   - 每个子问题按词项重叠 + IDF 选择有区分度的 passage；每子问题最多 8 条，每来源最多 2 条。
+   - PDF 为增量启发式抽取；字符过少、加密或异常字符比例高时标 `low_confidence=true`。
+4. **Claim binding（论断绑定）**
+   - 每条 claim 必须来自一条 evidence，携带 `locator`、`quote`、`evidence_id`。
+   - `quote` 必须是来源文本的精确子串；生成后逐条做子串校验。
+   - 没有 locator 或 quote 的内容不会成为 claim。
+5. **Conflict resolution（冲突处理）**
+   - 同一子问题内出现 supports 与 refutes/mixed 时生成 conflict。
+   - 双方 quote、locator、来源与事实差异并列保留；`resolution` 固定 `unresolved`。
+   - 不选边、不平均、不把反面证据改写为套话。
+6. **Synthesis（综合）**
+   - 章节：范围 → 逐子问题 → 冲突 → 覆盖与空白 → 结论口径与不确定性。
+   - 每个实质句带 claim 级引用；gap 子问题明确“不作结论”。
+
+## 结论口径与引用格式
+
+**claim 级引用，不是段落级、不是文献级。** 每条论断形如：
+
+```json
+{
+  "claim_id": "C001",
+  "text": "[S1] 标题：支持性证据——“原文引句”",
+  "support_level": "moderate",
+  "direction": "supports",
+  "evidence_id": "E001",
+  "locator": "case.json#/sources/0#abstract#s1",
+  "locators": ["case.json#/sources/0#abstract#s1"],
+  "quote": "原文精确子串",
+  "quote_verified": true
+}
+```
+
+行内引用格式：
+
+```text
+[S1 | case.json#/sources/0#abstract#s1]
+```
+
+支撑等级：
+
+| 等级 | 口径 |
 |---|---|
-| `/input/case.json` | 必读。`review_question`/`research_question`/`topic`；`criteria`（`year_from`/`year_to`/`languages`/`include_types`/`exclude_types`/`require_abstract`/`require_fulltext`）；`records[]`（`source_id`、`title`、`abstract`、`text`、`year`、`language`、`venue`、`doi`、`study_type`）。 |
-| `task.md` | 可选；无综述问题时取首个有效正文行兜底。 |
-| `--work` | 默认 `/app/work`。 |
+| `strong` | ≥2 个独立高可靠来源在同一子问题同向一致，且无冲突 |
+| `moderate` | 一条高可靠来源的精确引用，或 ≥2 条一致来源 |
+| `limited` | 单来源、题录级、低置信度文本或证据较弱 |
+| `contested` | 同一子问题存在未裁决冲突，双方引文必须同时出现 |
 
-## 处理流程（对应评分维度）
+写作要求：
 
-1. **先定标准再筛选**（任务完成度）：读入 `criteria` 并原样回显；未提供时只做结构检查并在不确定性中声明。
-2. **逐条筛选留痕**（可核验性）：按 DOI/规范化标题去重、年份区间、语言、研究类型、摘要/全文要求逐条检查；每条排除记录给出 `code` 与 `detail`，不静默丢弃。
-3. **主题从文献长出**（正确性）：统计纳入记录标题与摘要的共现词，取高频词作主题种子，按词项重叠分配记录；无法归入的记录单列 `other_reported_topics`，不硬套背景/方法/展望框架。
-4. **证据表回链**（正确性）：每行含 `row_id`、`theme_id`、`source_id`、定位串、`quote`、证据强度与方向标签。
-5. **带引用草稿**（完整性）：每段先声明支持记录数与强度（一致/提示性/冲突/无证据），逐句引用并附 `[source_id]`；无证据的主题明确写出。
-6. **冲突与空白**（完整性）：同主题出现相反方向时并列引句；空白只写语料层面的筛选流失与空主题，不写成领域空白。
+- 一句实质结论对应一条 claim；综述中的每个实质句都附 `[source_id | locator]`。
+- 表述强度不得超过 `support_level`。
+- 不允许“研究表明……”却无法回指到 claim 的句子。
+- 不允许把 gap 写成“证据有限但趋势明显”；只能写“本批次未检索到可定位证据，不作结论”。
 
-## 输出契约
+## 冲突与不确定性处理
 
-顶层：`case_id`、`status`、`result`、`evidence`、`uncertainty`、`errors`、`stats`、`contract_notes`、`output_contract_fields`。
+- 冲突判定：先移除 `no significant` / `no difference` 等否定短语，再匹配正负线索，避免把“无显著差异”误判为“显著”。
+- 冲突呈现：`conflicts[].positions` 并列双方 claim、quote、locator；`factual_differences` 只列元数据中确实不同的字段；`possible_explanations` 标注为 caveat，不声称已解释。
+- 冲突影响：参与冲突的 claim 的 `support_level` 置为 `contested`；冲突同时进入 `synthesis`、`limitations`、`uncertainty`。
+- 不确定性类型固定：`unresolved_conflict`、`evidence_gap`、`low_confidence_text`、`missing_metadata`、`duplicate_sources`、`unreadable_material`、`sub_questions_derived`、`criteria_not_supplied`、`no_sources`、`no_question`、`partial_run`、`failed_run`。
+- 覆盖阈值（可在 `assets/policy.json` 调整）：covered = ≥2 来源且 ≥2 条证据；thin = ≥1 来源且 ≥1 条；gap = 0 条。
 
-`result` 含：`review_question`、`screening`（criteria/identified/included/excluded/excluded_records/flow）、`themes`、`evidence_table`、`review_draft`（paragraphs/citations_used/word_count/citation_rule）、`conflicts`、`research_gaps`、`limitations`、`change_log`。
+## 报告结构
 
-输入 `output_contract` 的每个字段名都会出现在顶层；无法产出时写 `null` 并在 `contract_notes` 说明。
+`result.json` 顶层固定包含：
 
-`status`：无问题或无记录、或全部记录被排除 → `insufficient_input`；仅 1 条纳入 → `partial`；≥2 条纳入并生成草稿 → `success`；解析失败 → `failed`。
+```text
+case_id, input_id, status, question, sub_questions, sources, evidence, claims,
+conflicts, coverage, synthesis, limitations, uncertainty, run_log, criteria,
+method, input_manifest, verification, stats, errors, contract_extras,
+output_contract_fields
+```
+
+同时逐字满足案例 `output_contract` 的每个字段：
+
+- 直接同名字段优先；
+- 别名映射：`report`/`summary` → `synthesis`；`findings` → `claims`；`references` → `sources`；`citations` → `evidence`；`gaps` → `coverage`；`notes` → `uncertainty`；`status` → `status`；
+- 未知字段 best-effort 保留（`produced=false` + 说明）并记入 `contract_extras`，不静默丢弃。
+
+`report.md` 章节：
+
+1. 子问题与覆盖
+2. 来源清单
+3. 证据与论断（含逐字引文与 locator）
+4. 冲突（未裁决）
+5. 覆盖与空白
+6. 综合叙述
+7. 局限与不确定性
+8. 运行日志
+9. 统计
+
+`run-review.md` 章节：
+
+1. 输入身份（case_id、文件哈希、输入清单）
+2. 主结果（逐子问题覆盖）
+3. 证据定位索引（逐条 claim 的 locator、quote、核验状态）
+4. 冲突与空白
+5. 不确定性
+6. 输出契约核对
+7. 自检结果（claim 数、locator/quote 覆盖、引文子串校验、冲突未裁决、gap 三处一致性）
+8. 复核步骤
+9. 运行日志
+
+`report.md` 与 `run-review.md` 只由 `result.json` 字段渲染，不引入额外事实。
 
 ## 异常处理
 
-| 情形 | 处理 | 标记 |
-|---|---|---|
-| 无 `criteria` | 仅结构检查，声明标准缺失 | `uncertainty.type=criteria_not_supplied` |
-| 记录重复 | 保留首条，其余记 `duplicate_doi`/`duplicate_title` | `screening.excluded` |
-| 无摘要 | 若标准要求摘要则排除，否则标 title-only | `evidence_strength=title_only` |
-| 全部排除 | 不生成任何结论 | `status=insufficient_input` |
-| 无年份 | 不做时间性表述 | `uncertainty.type=no_publication_years` |
-| 主题无记录 | 保留空主题并说明 | `research_gaps.type=theme_without_evidence` |
-| 输出目录不可写 | stderr 错误，退出码 3 | 无静默成功 |
+| 情形 | 行为 |
+|---|---|
+| 无来源（无 case 记录、无可读材料） | `status=insufficient_input`；`uncertainty` 记 `no_sources`；不生成 claim；仍写三个输出文件并退出 0 |
+| 来源不可读（损坏 JSON/XML/CSV、二进制 PDF） | 记录 `errors` 与 `limitations.unreadable_material`；其余来源继续；`status` 可降为 `partial` |
+| 来源互相矛盾 | 生成 `conflicts`，`resolution=unresolved`；双方并列，不裁决；claim 标 `contested` |
+| 覆盖不足（某子问题无证据） | `coverage.status=gap`；同时写入 `coverage.gaps`、`limitations`（`evidence_gap`）、`uncertainty`；综合部分明确不作结论 |
+| 研究问题缺失 | 若 `task.md` 可提取问题则使用；否则 `status=insufficient_input`，并记 `no_question` |
+| `case.json` 损坏 | `status=failed`（若无可用材料）；写出结构化失败结果、错误与限制；退出 0 |
+| 输出目录不可写 | 依次回退到 `--work`、当前目录；仍失败则仅向 stderr 报错并退出 0 |
+| PDF 低置信度 | `low_confidence=true` + `confidence_notes`；相关 claim 最多 `limited`；记入 `uncertainty` |
 
-## 限制
+状态定义：`success`（有问题、有来源、≥1 条可定位 claim）、`partial`（来源过少或低置信度占比高）、`insufficient_input`（无问题/来源/证据）、`failed`（输入损坏或流程异常）。任何状态都退出码 0。
 
-- 主题来自词项共现，不是领域分类学；标签可能偏向高频通用词。
-- 只使用题录/摘要，无法核验全文方法、效应量与统计。
-- 单轮筛选，不等于系统综述的双人独立筛选与偏倚评估。
-- 不访问外部数据库；所有结论以输入批次为界。
+## 自检清单
 
-## 最小调用示例（示例，非正式案例结果）
+运行后必须逐项确认：
 
-```bash
-python /skills/weekly-skill/scripts/run_skill.py --case /input/case.json --out /app/output/result.json --work /app/work
+- [ ] `result.json` 可解析，`case_id`、`status` 存在；
+- [ ] `output_contract` 每个字段都在顶层，未知字段在 `contract_extras`；
+- [ ] 每条 claim 有 `evidence_id`、`locator`/`locators`、`quote`；
+- [ ] 每条 claim 的 `quote` 是对应 evidence 文本的精确子串（`quote_verified=true`）；
+- [ ] 每个非 gap 子问题至少有一条 claim；每个 gap 子问题在 `coverage.gaps`、`limitations`、`uncertainty` 三处都有记录；
+- [ ] 每个 conflict 的 `resolution=unresolved`，双方 positions 都存在；
+- [ ] `report.md` 中的 claim/source/conflict/gap 编号与 `result.json` 一致；
+- [ ] `run-review.md` 的输入哈希、locator 索引、契约核对、自检结果完整；
+- [ ] 空输入与损坏输入均退出 0，且状态诚实；
+- [ ] 包内无 `__pycache__`、无网络调用、无第三方依赖。
+
+## Agent 执行说明（必须遵守）
+
+1. 先运行：
+
+   ```bash
+   python /skills/weekly-skill/scripts/run_skill.py --input /input --work /app/work --out /app/output
+   ```
+
+2. 读取 `/app/output/result.json`。**不要直接相信 claim 文本**；对每条 claim：
+   - 取 `evidence_id`，在 `evidence[]` 中找到对应段落；
+   - 用 `locator` 打开原始来源字段/页面；
+   - 逐字比对 `quote` 是否为原文精确子串；
+   - 若不一致：修正该 claim 或删除；**不得新增无法回链的论断**。
+
+3. 检查 `support_level`：单来源不得写成 `strong`；存在冲突的 claim 必须是 `contested`。
+
+4. 检查冲突：所有 `conflicts[].resolution` 必须仍为 `unresolved`；不得把双方合并成单边结论。
+
+5. 检查 gap：`coverage.status=gap` 的子问题只能写“未检索到可定位证据，不作结论”，不得用“趋势”“仍需研究”替代。
+
+6. 完成复核后，写出/更新 `/app/output/run-review.md`，至少包含：
+   - 输入标识（`case_id`、输入文件哈希）；
+   - 主结果（逐子问题覆盖与 claim 数）；
+   - 每条 claim 的 `claim_id`、`locator`、`quote`、逐字核验结果；
+   - 冲突与 gap 清单；
+   - 运行状态与不确定性；
+   - 输出契约核对；
+   - 自检结果与仍需人工处理的事项。
+
+7. `report.md` 已由 `result.json` 自动渲染。如确需补充叙述，只能使用 `result.json` 中已有的事实与引文，不得引入新来源、新数字或新结论。
+
+8. 如果脚本因环境限制失败，仍应保留并检查它写出的失败 `result.json`、`report.md`、`run-review.md`；不得伪造成功结果。
+
+## 文件布局
+
+```text
+submission/
+  SKILL.md
+  GITHUB_URL.txt
+  scripts/
+    run_skill.py          # 永不让 harness 崩溃的薄包装器
+    sk_entry.py           # CLI 与编排、契约映射、自检、写出
+    sk_ingest.py          # 输入/来源/证据抽取（含 PDF）
+    sk_analyze.py         # claim/冲突/覆盖/综合/局限
+    sk_render.py          # report.md 与 run-review.md 渲染
+  references/
+    research-protocol.md
+    claim-evidence-binding.md
+    conflicts-and-coverage.md
+  assets/
+    policy.json           # 支撑等级、覆盖阈值、可靠性权重、双语词表
+  examples/
+    demo-case/
+      case.json
+      quickstart.md
 ```
 
-```json
-{"case_id": "demo-rv-01", "review_question": "Does exercise reduce depression in older adults?",
- "criteria": {"year_from": 2015, "languages": ["en"], "require_abstract": true},
- "records": [{"source_id": "P1", "title": "Exercise and depression in older adults",
-              "abstract": "A randomized trial found improved depression scores after exercise.", "year": 2020}]}
-```
-
-示意输出（示例，已截断）：`{"case_id":"demo-rv-01","status":"partial","result":{"screening":{"included":1,"excluded":0},"review_draft":{"paragraphs":1}}}`。以上不代表任何官方固定案例结果。
-
-
-## 交付保证与评分对齐
-
-调用顺序（固定）：
-
-1. 先运行包内脚本（若存在）：`python scripts/run_skill.py`（默认读 `/input/case.json`，写 `/app/output/result.json`）；路径不同时用 `--case` / `--out` 指定。
-2. 再完成脚本无法自动完成的实质工作（译文、论述、图表、修订、结论等），把结果写回 `result.json` 对应字段。
-3. 最后自检：`case_id` 与输入一致；`output_contract` 每个字段都存在；`status` 为 `completed`（仅在确实缺输入时为 `partial`）；无 `pending` 占位；数字、引用、来源可逐条回溯。
-
-运行保证：
-
-- 输入缺失、JSON 损坏、字段异常、输出目录不存在时，仍须写出结构化 `result.json` 并正常结束，不得崩溃或非零退出。
-- 不联网、不伪造数据、不声称平台评分或官方案例结果。
-- 交付物必须是可直接编辑与复核的成品，而不是流程说明。
-
-评分对齐（本题五个维度）：
-
-- 实际效果（40）：完整产出任务要求的最终成品，覆盖全部输入条目，可直接进入修改流程。
-- 使用增益（25）：体现相对基础 Agent 的可验证改进（结构化、术语/数字/引用核对、可编辑性）。
-- 创新增益（15）：保留方法学增量（分块、对齐、二次校验、版本比对等），并用结果证明其价值。
-- 可靠体验（10）：异常输入有明确降级与说明，不同长度/文体/重复运行下稳定产出。
-- 生态贡献（10）：用途、调用、输入输出、限制、示例、维护信息齐全，资源可被他人复用。
-
-## 最终交付强制要求
-
-1. **调用 Agent 必须交付成品，不是流程说明**：脚本产出只是索引、核对或规格骨架；调用 Agent 必须在同一 `result.json` 中补齐本题要求的最终产物（正文/译文/审稿意见/综述/分析结论/图表源文件与导出件/幻灯片页内容与讲稿/实验方案等）。交付字段为空、只有标题骨架，或含 `pending`、`TODO` 之类占位，一律视为未完成。
-2. **必须覆盖全部输入条目**：输入中的每个章节、问题、文献、图、页面、指标都要有对应条目，不得只处理示例或首条；确实缺失的条目写入 `uncertainty` / `limitations` 并说明原因，不得静默跳过。
-3. **必须自检后再交付**：`case_id` 与输入一致；`output_contract` 每个字段都存在；状态值取本题契约规定的枚举；数字、单位、引用、来源可逐条回溯；结果内部无自相矛盾。
-4. **参数等价**：`python scripts/run_skill.py --case <输入> --out <输出>` 与 `--output <输出>` 等价；默认 `/input/case.json` → `/app/output/result.json`。
-5. **平台用 3 个固定案例分别运行**：逻辑要由输入驱动，不针对某一份示例硬编码；字段命名差异走别名匹配与显式降级，并在 `uncertainty` 记录假设。
+约束：仅 Python 标准库；不联网；确定性；≤50 个文件；单文件 ≤500KB；总计 ≤2MB；无符号链接；无 `__pycache__`。
