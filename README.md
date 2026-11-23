@@ -3,33 +3,45 @@
 Bohrium Playground Period 4 submission — challenge `challenge-e97137c9` (track: `deep-research-literature-review`).
 
 This repository holds the complete skill package for the challenge: the skill
-definition, its executable entry point and all supporting scripts. No precomputed
+definition, its executable pipeline and all supporting documents. No precomputed
 answers, private data or credentials are included.
 
 ## Skill
 
-- Name: `screening-first-literature-review`
-- Summary: Use when a batch of literature records must be turned into a cited narrative review, requiring explicit eligibility criteria applied before writing, recorded exclusion reasons, evidence-derived themes, a locatable quote table, per-paragraph citations and honest conflict and gap statements.
+- Name: `deep-research-evidence-review`
+- Summary: "面向文献综述与深度研究的证据链工作流：把研究问题拆成子问题，逐条收集来源与段落证据，将每条论断绑定到可核验的 locator 与原文引句，显式保留冲突与覆盖缺口，并输出 result.json、report.md 与 run-review.md。适用于给定文献/材料批次的系统筛选、证据矩阵与带引用综述；不联网、不补造文献。"
 
 ## Contents
 
 | File |
 |------|
 | `SKILL.md` |
+| `assets/policy.json` |
+| `examples/demo-case/case.json` |
+| `examples/quickstart.md` |
+| `references/claim-evidence-binding.md` |
+| `references/conflicts-and-coverage.md` |
+| `references/research-protocol.md` |
 | `scripts/run_skill.py` |
+| `scripts/sk_analyze.py` |
+| `scripts/sk_entry.py` |
+| `scripts/sk_ingest.py` |
+| `scripts/sk_render.py` |
 | `README.md` |
 
 ## How to run
 
 ```bash
-python scripts/run_skill.py --case /input/case.json --output /app/output/result.json
+python scripts/sk_entry.py --input /input --work /app/work --out /app/output
 ```
 
-The entry point is `SKILL.md`; input/output contracts, error handling and a minimal
-usage example are documented there.
+Two passes are intended: the first writes `/app/work/agent_tasks.json` (evidence
+skeleton) and `/app/output/result.json`; after the agent writes
+`/app/work/agent_judgement.json`, the second pass merges and validates the result.
+See `SKILL.md` and `references/two-phase-workflow.md`.
 
 ## Notes
 
 - Pure Python standard library; no network access required.
-- The result JSON keeps the input case id, the main results, per-item evidence,
-  a run status and an uncertainty section.
+- Every claim is anchored to paragraph-level evidence; unknown items are reported
+  in `uncertainty` instead of being fabricated.
