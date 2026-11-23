@@ -1,0 +1,132 @@
+{
+  "version": "1.0.0",
+  "description": "Deterministic policy for the deep-research evidence review skill. All thresholds are applied mechanically; no network or model calls are made.",
+  "support_levels": {
+    "strong": {
+      "rule": "At least two independent high-reliability sources in the same sub-question agree and no conflict is detected.",
+      "min_sources": 2,
+      "min_evidence": 3,
+      "requires_high_reliability": true
+    },
+    "moderate": {
+      "rule": "One high-reliability source with an exact located quote, or at least two sources with consistent direction.",
+      "min_sources": 1,
+      "min_evidence": 1,
+      "requires_high_reliability": false
+    },
+    "limited": {
+      "rule": "One medium/low-reliability source, a title-only passage, or text extracted with low confidence.",
+      "min_sources": 1,
+      "min_evidence": 1,
+      "requires_high_reliability": false
+    },
+    "contested": {
+      "rule": "Opposing stances (supports vs refutes/mixed) are present in the same sub-question; claims inherit this level and no side is selected.",
+      "min_sources": 2,
+      "min_evidence": 2,
+      "requires_high_reliability": false
+    },
+    "unsupported": {
+      "rule": "No located evidence exists for a sub-question; no claim is emitted and the sub-question is marked as a coverage gap.",
+      "min_sources": 0,
+      "min_evidence": 0,
+      "requires_high_reliability": false
+    }
+  },
+  "coverage": {
+    "covered": {
+      "min_sources": 2,
+      "min_evidence": 2,
+      "description": "At least two sources and two located evidence passages support the sub-question."
+    },
+    "thin": {
+      "min_sources": 1,
+      "min_evidence": 1,
+      "description": "Some located evidence exists but the corroboration threshold is not met."
+    },
+    "gap": {
+      "max_evidence": 0,
+      "description": "No located evidence was found; the sub-question is reported as a gap, never answered by extrapolation."
+    }
+  },
+  "evidence": {
+    "min_sentence_chars": 25,
+    "max_quote_chars": 400,
+    "max_passages_per_subquestion": 8,
+    "max_passages_per_source_per_subquestion": 2,
+    "max_passages_per_source": 80,
+    "max_claims": 120,
+    "skip_sections": [
+      "references",
+      "bibliography",
+      "acknowledgements",
+      "acknowledgments",
+      "funding",
+      "conflict of interest",
+      "conflicts of interest"
+    ]
+  },
+  "sources": {
+    "max_sources": 300,
+    "max_materials": 500,
+    "max_file_chars": 400000,
+    "max_total_chars": 2000000,
+    "max_record_chars": 200000
+  },
+  "pdf": {
+    "max_chars": 200000,
+    "max_raw_bytes": 8388608,
+    "low_confidence_min_letters": 40,
+    "low_confidence_bad_ratio": 0.1
+  },
+  "reliability": {
+    "high_min_score": 2.5,
+    "medium_min_score": 1.0,
+    "doi_points": 1.5,
+    "venue_points": 1.0,
+    "year_points": 0.5,
+    "peer_reviewed_points": 2.0,
+    "study_design_points": 1.0
+  },
+  "limits": {
+    "max_files": 50,
+    "max_file_bytes": 500000,
+    "max_total_bytes": 2097152,
+    "network": false,
+    "stdlib_only": true
+  },
+  "lexicon": {
+    "间歇性禁食": ["intermittent fasting", "intermittent", "fasting"],
+    "禁食": ["fasting"],
+    "2型糖尿病": ["type 2 diabetes", "t2d", "type 2"],
+    "糖尿病": ["diabetes", "diabetic"],
+    "血糖控制": ["glycaemic control", "glycemic control", "glucose control"],
+    "血糖": ["glycaemic", "glycemic", "glucose", "hba1c", "blood glucose"],
+    "糖化血红蛋白": ["hba1c", "glycated haemoglobin", "glycated hemoglobin"],
+    "依从性": ["adherence", "compliance"],
+    "安全性": ["safety", "adverse event", "adverse events"],
+    "低血糖": ["hypoglycaemia", "hypoglycemia"],
+    "老年": ["older", "elderly", "aged"],
+    "长期": ["long-term", "long term"],
+    "心血管": ["cardiovascular", "cardiac"],
+    "随机": ["randomised", "randomized", "random"],
+    "对照试验": ["controlled trial", "trial"],
+    "系统综述": ["systematic review"],
+    "荟萃分析": ["meta-analysis", "meta analysis"],
+    "疗效": ["efficacy", "effectiveness"],
+    "有效性": ["efficacy", "effective"],
+    "风险": ["risk"],
+    "干预": ["intervention"],
+    "队列": ["cohort"],
+    "样本": ["sample", "participants"],
+    "剂量": ["dose", "dosage"],
+    "机制": ["mechanism", "pathway"],
+    "生物标志物": ["biomarker"],
+    "预后": ["prognosis", "outcome"],
+    "发生率": ["incidence", "rate"],
+    "死亡率": ["mortality", "death"],
+    "儿童": ["children", "paediatric", "pediatric"],
+    "孕妇": ["pregnant", "pregnancy"],
+    "不良反应": ["adverse reaction", "adverse effect", "side effect"]
+  }
+}
