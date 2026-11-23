@@ -1,0 +1,68 @@
+{
+  "case_id": "demo-if-t2d-001",
+  "title": "Synthetic demo: intermittent fasting and glycaemic control in type 2 diabetes",
+  "research_question": "间歇性禁食是否能改善2型糖尿病成人的血糖控制？",
+  "sub_questions": [
+    {
+      "id": "Q1",
+      "question": "与常规饮食相比，间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标？"
+    },
+    {
+      "id": "Q2",
+      "question": "间歇性禁食在2型糖尿病成人中的依从性如何？"
+    },
+    {
+      "id": "Q3",
+      "question": "65岁以上老年2型糖尿病患者的长期（≥12个月）心血管结局证据如何？"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "S1",
+      "title": "Synthetic trial A: intermittent fasting and HbA1c at 12 weeks",
+      "abstract": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet. Adherence was moderate in the fasting arm.",
+      "year": 2022,
+      "venue": "Synthetic Demo Journal",
+      "doi": "10.0000/demo.s1",
+      "study_type": "randomised controlled trial (12 weeks)",
+      "population": "adults with type 2 diabetes",
+      "reliability": "high"
+    },
+    {
+      "source_id": "S2",
+      "title": "Synthetic trial B: intermittent fasting versus usual care at 24 weeks",
+      "abstract": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks. Adherence was low in the fasting arm.",
+      "year": 2023,
+      "venue": "Synthetic Demo Journal",
+      "doi": "10.0000/demo.s2",
+      "study_type": "randomised controlled trial (24 weeks)",
+      "population": "adults with type 2 diabetes",
+      "reliability": "high"
+    },
+    {
+      "source_id": "S3",
+      "title": "Synthetic narrative review: implementing intermittent fasting in diabetes care",
+      "abstract": "This synthetic review describes clinician training and implementation support as considerations for diabetes care. It reports no primary glycaemic outcome data.",
+      "year": 2024,
+      "venue": "Synthetic Review",
+      "doi": "10.0000/demo.s3",
+      "study_type": "narrative review",
+      "population": "adults with type 2 diabetes",
+      "reliability": "medium"
+    }
+  ],
+  "criteria": {
+    "scope": "Synthetic demonstration only; no real clinical claim is made or implied.",
+    "include": "Only the three synthetic records in this demo case.",
+    "exclude": "External literature, network retrieval and real patient data."
+  },
+  "output_contract": {
+    "report": "string: structured synthesis",
+    "findings": "array: claims bound to evidence",
+    "references": "array: sources with identifiers and reliability",
+    "citations": "array: evidence rows with locators and quotes",
+    "gaps": "array: coverage gaps per sub-question",
+    "notes": "array: uncertainty notes",
+    "status": "string: run status"
+  }
+}
