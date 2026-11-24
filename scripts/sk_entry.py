@@ -604,7 +604,7 @@ def write_outputs(payload, out_dir, work_dir):
     write_json(result_path, payload)
     atomic_write_text(review_path, sk_render.render_review(payload))
     return {
-        "result": str(result_path),
+        "result": Path(result_path).name,
         "report": str(report_path),
         "review": str(review_path),
     }
@@ -637,10 +637,10 @@ def run(input_arg, work_dir, out_arg):
     policy = sk_ingest.load_policy(HERE.parent)
     payload = build_payload(case, case_path, input_dir, task_text, files, policy, case_errors)
     payload["output_paths"] = {
-        "result": str(result_path),
-        "report": str(out_dir / "report.md"),
-        "review": str(out_dir / "run-review.md"),
-        "work": str(work_dir),
+        "result": Path(result_path).name,
+        "report": "report.md",
+        "review": "run-review.md",
+        "work": "work",
     }
     return payload, out_dir
 
@@ -676,10 +676,10 @@ def main(argv=None):
         payload = build_payload(case, case_path, input_dir, task_text, files, policy, case_errors)
         out_dir, result_path = resolve_out(args.out)
         payload["output_paths"] = {
-            "result": str(result_path),
-            "report": str(out_dir / "report.md"),
-            "review": str(out_dir / "run-review.md"),
-            "work": str(work_dir),
+            "result": Path(result_path).name,
+            "report": "report.md",
+            "review": "run-review.md",
+            "work": "work",
         }
     except Exception as exc:
         try:
@@ -687,10 +687,10 @@ def main(argv=None):
         except Exception:
             out_dir = Path(args.out)
         payload = failure_payload(case, case_path, exc, files)
-        payload["output_paths"] = {"result": str(out_dir / "result.json"),
-                                   "report": str(out_dir / "report.md"),
-                                   "review": str(out_dir / "run-review.md"),
-                                   "work": str(work_dir)}
+        payload["output_paths"] = {"result": "result.json",
+                                   "report": "report.md",
+                                   "review": "run-review.md",
+                                   "work": "work"}
     try:
         written = write_outputs(payload, out_dir, work_dir)
     except Exception as exc:
