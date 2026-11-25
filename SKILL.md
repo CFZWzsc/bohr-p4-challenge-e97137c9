@@ -1,6 +1,6 @@
 ---
 name: deep-research-evidence-review
-description: "面向文献综述与深度研究的证据链工作流：把研究问题拆成子问题，逐条收集来源与段落证据，将每条论断绑定到可核验的 locator 与原文引句，显式保留冲突与覆盖缺口，并输出 result.json、report.md 与 run-review.md。适用于给定文献/材料批次的系统筛选、证据矩阵与带引用综述；不联网、不补造文献。"
+description: "面向文献综述与深度研究的证据链工作流：把研究问题拆成子问题，逐条收集来源与段落证据，将每条论断绑定到可核验的 locator 与原文引句，显式保留冲突与覆盖缺口，并输出综述草稿 review_draft.md（交付主体）、结构化 result.json，以及 report.md、run-review.md、synthesis_matrix.csv、screening_log.csv、prisma_flow.svg、provenance.json、validation.json、research_report.docx。适用于给定文献/材料批次的系统筛选、证据矩阵与带引用综述；不联网、不补造文献。"
 ---
 
 # 深度研究文献综述 Skill
@@ -17,7 +17,10 @@ description: "面向文献综述与深度研究的证据链工作流：把研究
 - 来源间矛盾显式并列，不静默裁决；
 - 逐子问题覆盖评估（covered / thin / gap）；
 - 结构化综合叙述、局限、不确定性与运行日志；
-- 输出 `result.json`、`report.md`、`run-review.md` 三个可交付物。
+- 输出综述草稿 `review_draft.md`（**交付主体**，只含 `synthesis.sections` 正文）、结构化
+  `result.json`（其结构化版本），以及 `report.md`、`run-review.md`、`synthesis_matrix.csv`、
+  `screening_log.csv`、`prisma_flow.svg`、`provenance.json`、`validation.json`、
+  `research_report.docx`。
 
 本 Skill 只做“给定语料内的证据整理”，不做联网检索，不补造文献，不把缺失证据写成领域结论。
 
@@ -95,7 +98,8 @@ python scripts/run_skill.py --input examples/demo-case --work /app/work --out /a
 | `--out` | `/app/output` | 输出目录，或直接指向 `result.json` |
 | `--output` | 同上 | `--out` 的别名 |
 
-脚本总是退出码 0，并总是尝试写出 `result.json`、`report.md`、`run-review.md`。即使输入为空或损坏，也会写出诚实的状态与错误记录。
+脚本总是退出码 0，并总是尝试写出 `result.json`、`review_draft.md`、`report.md`、
+`run-review.md` 以及其余对账产物。即使输入为空或损坏，也会写出诚实的状态与错误记录。
 
 ## 检索与证据流程
 
@@ -187,14 +191,23 @@ python scripts/run_skill.py --input examples/demo-case --work /app/work --out /a
 case_id, input_id, status, question, sub_questions, sources, screening, themes,
 evidence, claims, conflicts, coverage, synthesis, limitations, uncertainty,
 run_log, criteria, method, input_manifest, verification, stats, errors,
-contract_extras, output_contract_fields
+contract_extras, output_contract_fields,
+prisma, quote_check_summary, boundary, gates, self_check, validator_verdict
 ```
+
+其中 `prisma`（PRISMA 计数）、`quote_check_summary`（引文校验摘要）、`boundary`（越界措辞扫描）、
+`gates[]`（case_contract / quote_integrity / strength_consistency / prisma_balance）、
+`self_check[]`（item/template_value/match）与 `validator_verdict` 共同构成机械可核验层；
+`validator_verdict` 与 `verification.all_checks_passed` 绑定。
 
 同时逐字满足案例 `output_contract` 的每个字段：
 
 - 直接同名字段优先；
 - 别名映射：`report`/`summary` → `synthesis`；`findings` → `claims`；`references` → `sources`；`citations` → `evidence`；`gaps` → `coverage`；`notes` → `uncertainty`；`status` → `status`；
 - 未知字段 best-effort 保留（`produced=false` + 说明）并记入 `contract_extras`，不静默丢弃。
+
+`review_draft.md`（**交付主体**）：只含 `synthesis.sections` 的综述正文（逐节 heading + text），
+不含筛选/统计表格外壳；它是可进入科研讨论的草稿，`result.json` 是其结构化版本。
 
 `report.md` 章节：
 
@@ -294,13 +307,19 @@ contract_extras, output_contract_fields
 ```text
 submission/
   SKILL.md
+  README.md
+  worklog.md
+  requirements.txt
   GITHUB_URL.txt
+  docs/
+    ERROR_HANDLING.md
   scripts/
     run_skill.py          # 永不让 harness 崩溃的薄包装器
     sk_entry.py           # CLI 与编排、契约映射、自检、写出
     sk_ingest.py          # 输入/来源/证据抽取（含 PDF）
     sk_analyze.py         # claim/冲突/覆盖/综合/局限
-    sk_render.py          # report.md 与 run-review.md 渲染
+    sk_render.py          # review_draft.md、report.md 与 run-review.md 渲染
+    sk_artifacts.py       # synthesis_matrix/screening_log/prisma_flow/provenance/validation/docx
   references/
     research-protocol.md
     claim-evidence-binding.md
@@ -310,7 +329,8 @@ submission/
   examples/
     demo-case/
       case.json
-      quickstart.md
+    quickstart.md
+    example-result.json
 ```
 
 约束：仅 Python 标准库；不联网；确定性；≤50 个文件；单文件 ≤500KB；总计 ≤2MB；无符号链接；无 `__pycache__`。
