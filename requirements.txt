@@ -1,0 +1,3 @@
+# Python 3.10+ standard library only.
+# No third-party packages are required or imported.
+# See README.md and SKILL.md for usage.
