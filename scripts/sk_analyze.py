@@ -9,6 +9,7 @@ import sys
 
 sys.dont_write_bytecode = True
 
+import re
 from collections import Counter
 
 STANCE_LABEL = {
@@ -255,8 +256,346 @@ def build_coverage(sub_questions, evidence, claims, conflicts, sources, policy):
     }
 
 
+# ---------------------------------------------------------------------------
+# screening: one auditable eligibility record per source
+# ---------------------------------------------------------------------------
+
+def _criteria_body(criteria):
+    """Unwrap the {'criteria': {...}} envelope produced by extract_criteria."""
+    if isinstance(criteria, dict) and len(criteria) == 1:
+        only = next(iter(criteria.values()))
+        if isinstance(only, (dict, list)):
+            return only
+    return criteria
+
+
+def _criteria_has(body, name):
+    if isinstance(body, dict):
+        return any(str(key).lower() == name for key in body.keys())
+    if isinstance(body, list):
+        for item in body:
+            if isinstance(item, dict) and any(str(key).lower() == name for key in item.keys()):
+                return True
+    return False
+
+
+def _criteria_clause(body, name):
+    if isinstance(body, dict):
+        for key, value in body.items():
+            if str(key).lower() != name:
+                continue
+            if isinstance(value, str):
+                return value
+            if isinstance(value, list):
+                return "；".join(str(item) for item in value)
+            if isinstance(value, dict):
+                return "；".join("%s：%s" % pair for pair in value.items())
+    return ""
+
+
+def _first_pattern(text, patterns):
+    lowered = (text or "").lower()
+    for pattern in patterns or []:
+        clean = str(pattern or "").strip().lower()
+        if clean and clean in lowered:
+            return clean
+    return ""
+
+
+def build_screening(sources, criteria, criteria_declared, policy):
+    """Screen every source against the criteria declared by the case.
+
+    Inclusion/exclusion standards come from case criteria. When the case
+    declares no criteria, nothing is invented: every source is kept and tagged
+    ``criteria_not_declared``. The mechanical checks that operationalise the
+    criteria (non-empirical designs, missing primary outcome data) are read from
+    assets/policy.json and named in ``rule_source``.
+    """
+    settings = policy.get("screening", {}) or {}
+    designs = settings.get("non_empirical_designs") or []
+    no_outcome = settings.get("no_primary_outcome_patterns") or []
+    min_chars = max(1, int(settings.get("min_text_chars") or 40))
+    body = _criteria_body(criteria)
+    has_include = _criteria_has(body, "include")
+    has_exclude = _criteria_has(body, "exclude")
+    include_clause = _short(_criteria_clause(body, "include"), 200)
+    exclude_clause = _short(_criteria_clause(body, "exclude"), 200)
+    entries = []
+    for source in sources:
+        title = source.get("title") or ""
+        study_type = source.get("study_type") or ""
+        text = source.get("text") or ""
+        checked = ["title", "study_type"]
+        if text.strip():
+            checked.append("abstract_or_full_text")
+        if source.get("duplicate_of"):
+            round_no = 1
+            decision, code = "exclude", "duplicate_record"
+            reason = "与来源 %s 的 DOI/标题/全文指纹一致，属重复记录，不重复计入证据。" % (
+                source.get("duplicate_of"))
+            ref = "case.criteria" if criteria_declared else "criteria_not_declared"
+            rule = "assets/policy.json#sources(dedup)"
+        elif len(text.strip()) < min_chars:
+            round_no = 1
+            decision, code = "exclude", "insufficient_text"
+            reason = "可读正文少于 %d 字符，无法核对纳入/排除标准。" % min_chars
+            ref = "case.criteria" if criteria_declared else "criteria_not_declared"
+            rule = "assets/policy.json#screening.min_text_chars"
+        elif not criteria_declared:
+            round_no = 2
+            decision, code = "include", "criteria_not_declared"
+            reason = "case 未声明纳入/排除标准；无法据此排除，按输入批次全量纳入并标记为未筛选。"
+            ref = "none"
+            rule = "none"
+        else:
+            round_no = 2
+            outcome_hit = _first_pattern(" ".join([title, study_type, text]), no_outcome)
+            design_hit = _first_pattern(title + " " + study_type, designs)
+            if outcome_hit:
+                decision, code = "exclude", "no_primary_outcome"
+                reason = "命中“%s”：该来源不提供原始结局数据，无法回答以结局为导向的子问题。" % outcome_hit
+                rule = "assets/policy.json#screening.no_primary_outcome_patterns"
+            elif design_hit:
+                decision, code = "exclude", "non_empirical_design"
+                reason = "研究类型为“%s”（非实证或无原始结局设计），不进入证据综合。" % design_hit
+                rule = "assets/policy.json#screening.non_empirical_designs"
+            else:
+                decision, code = "include", ("include" if has_include else "criteria_met")
+                reason = "逐项核对声明的纳入/排除标准后纳入，进入证据抽取。"
+                rule = "assets/policy.json#screening"
+            ref = ("case.criteria.exclude" if has_exclude else "case.criteria")
+            if decision == "include":
+                ref = "case.criteria.include" if has_include else "case.criteria"
+        if decision == "exclude":
+            source["included_in_evidence"] = False
+        if not criteria_declared:
+            criteria_text = "case 未声明 criteria；未据此排除任何来源。"
+        elif decision == "exclude":
+            criteria_text = exclude_clause or include_clause
+        else:
+            criteria_text = include_clause or exclude_clause
+        entries.append({
+            "source_id": source["source_id"],
+            "round": round_no,
+            "decision": decision,
+            "criterion_code": code,
+            "criterion_source": ref,
+            "criteria_text": criteria_text,
+            "rule_source": rule,
+            "criteria_declared": bool(criteria_declared),
+            "reason": reason,
+            "checked_fields": checked,
+        })
+    return entries
+
+
+# ---------------------------------------------------------------------------
+# theme induction: cluster the included evidence by content facets
+# ---------------------------------------------------------------------------
+
+def _alias_hits(text, aliases):
+    lowered = (text or "").lower()
+    hits = []
+    for alias in aliases:
+        clean = str(alias or "").strip().lower()
+        if not clean:
+            continue
+        if re.search(r"(?<![a-z0-9])" + re.escape(clean) + r"(?![a-z0-9])", lowered):
+            hits.append(clean)
+    return hits
+
+
+def _facet_order(policy):
+    settings = policy.get("themes", {}) or {}
+    synonyms = settings.get("synonyms") or {}
+    labels = settings.get("labels") or {}
+    facets = []
+    for facet, aliases in synonyms.items():
+        if isinstance(aliases, str):
+            aliases = [aliases]
+        if not isinstance(aliases, list):
+            continue
+        clean = [str(alias) for alias in aliases if str(alias).strip()]
+        if clean:
+            facets.append((str(facet), clean, str(labels.get(facet) or facet)))
+    return facets
+
+
+def _source_sort_key(source_map):
+    def key(source_id):
+        return (source_map.get(source_id, {}).get("order", 10 ** 6), source_id)
+    return key
+
+
+def _theme_strength(group):
+    directions = Counter(claim.get("direction") or "neutral" for claim in group)
+    if directions.get("supports") and (directions.get("refutes") or directions.get("mixed")):
+        return "contested", "同一主题内支持与相反/无差异结论并存"
+    if any(claim.get("support_level") == "contested" for claim in group):
+        return "contested", "存在未裁决冲突"
+    high_by_direction = {}
+    for claim in group:
+        if claim.get("evidence_confidence") == "high" and claim.get("support_level") in {"moderate", "strong"}:
+            high_by_direction.setdefault(claim.get("direction"), set()).add(claim.get("source_id"))
+    for direction in ("supports", "refutes"):
+        if len(high_by_direction.get(direction, set())) >= 2:
+            return "established", "≥2 个高可靠来源在同一方向一致且无冲突"
+    return "suggestive", "单一来源或证据等级不足，仅作提示性归纳"
+
+
+def _theme_entry(theme_id, label, terms, group, source_map, gaps, basis="按结论方向"):
+    key = _source_sort_key(source_map)
+    member_sources = sorted({claim.get("source_id") for claim in group if claim.get("source_id")}, key=key)
+    supporting = [claim.get("claim_id") for claim in group if claim.get("claim_id")]
+    strength, basis = _theme_strength(group)
+    directions = Counter(claim.get("direction") or "neutral" for claim in group)
+    gap_ids = sorted({gap.get("sub_question_id") for gap in gaps if gap.get("sub_question_id")})
+    boundary_parts = [
+        "仅覆盖本批次 %d 个纳入来源、%d 条结论" % (len(member_sources), len(supporting)),
+    ]
+    if gap_ids:
+        boundary_parts.append("不覆盖无定位证据的子问题 %s" % "、".join(gap_ids))
+    else:
+        boundary_parts.append("不扩展到输入语料之外的领域结论")
+    if terms:
+        detail = "以来源文本中的术语 %s 为共同线索，" % "、".join(sorted(terms)[:4])
+    else:
+        detail = basis + "，"
+    definition = "%s：%s归纳 %d 个来源的 %d 条结论。" % (
+        label, detail, len(member_sources), len(supporting))
+    return {
+        "theme_id": theme_id,
+        "theme": label,
+        "definition": definition,
+        "member_sources": member_sources,
+        "supporting_claim_ids": supporting,
+        "boundary": "；".join(boundary_parts) + "。",
+        "evidence_strength": strength,
+        "strength_basis": basis,
+        "stance_counts": {
+            "supports": directions.get("supports", 0),
+            "refutes": directions.get("refutes", 0),
+            "mixed": directions.get("mixed", 0),
+            "neutral": directions.get("neutral", 0),
+        },
+        "sub_question_ids": sorted({claim.get("sub_question_id") for claim in group
+                                    if claim.get("sub_question_id")}),
+    }
+
+
+def _direction_themes(claims, source_map, gaps):
+    labels = (
+        ("supports", "支持性结论群（direction=supports）"),
+        ("refutes", "相反或无差异结论群（direction=refutes/mixed）"),
+        ("neutral", "背景与方法结论群（direction=neutral）"),
+    )
+    themes = []
+    for stance, label in labels:
+        if stance == "refutes":
+            group = [claim for claim in claims if claim.get("direction") in {"refutes", "mixed"}]
+        else:
+            group = [claim for claim in claims if claim.get("direction") == stance]
+        if not group:
+            continue
+        themes.append(_theme_entry("T%02d" % (len(themes) + 1), label, [],
+                                   group, source_map, gaps, "按结论方向"))
+    return themes
+
+
+def build_themes(sources, claims, coverage, policy):
+    """Induce >=2 content-derived themes from the included sources."""
+    source_map = {source["source_id"]: source for source in sources
+                  if source.get("included_in_evidence", True)}
+    gaps = coverage.get("gaps") or []
+    included_claims = [claim for claim in claims if claim.get("source_id") in source_map]
+    facets = _facet_order(policy)
+    buckets = {}
+    bucket_terms = {}
+    seen_signatures = set()
+    for claim in included_claims:
+        haystack = claim.get("quote") or claim.get("text") or ""
+        for facet, aliases, label in facets:
+            hits = _alias_hits(haystack, aliases)
+            if not hits:
+                continue
+            buckets.setdefault((facet, label), []).append(claim)
+            bucket_terms.setdefault((facet, label), set()).update(hits[:4])
+    themes = []
+    for facet, aliases, label in facets:
+        group = buckets.get((facet, label))
+        if not group:
+            continue
+        signature = tuple(claim.get("claim_id") for claim in group)
+        if signature in seen_signatures:
+            continue
+        seen_signatures.add(signature)
+        terms = sorted(bucket_terms.get((facet, label), set()))
+        themes.append(_theme_entry("T%02d" % (len(themes) + 1), label, terms,
+                                   group, source_map, gaps, "按术语线索"))
+    if len(themes) > 1:
+        kept = []
+        for index, theme in enumerate(themes):
+            own = set(theme.get("supporting_claim_ids") or [])
+            if any(own and own < set(other.get("supporting_claim_ids") or [])
+                   for other_index, other in enumerate(themes) if other_index != index):
+                continue
+            kept.append(theme)
+        for index, theme in enumerate(kept):
+            theme["theme_id"] = "T%02d" % (index + 1)
+        themes = kept
+    if included_claims and len(themes) < 2:
+        assigned = {claim_id for theme in themes for claim_id in theme["supporting_claim_ids"]}
+        rest = [claim for claim in included_claims if claim.get("claim_id") not in assigned]
+        if themes and rest:
+            for theme in _direction_themes(rest, source_map, gaps):
+                themes.append(dict(theme, theme_id="T%02d" % (len(themes) + 1)))
+        else:
+            themes = _direction_themes(included_claims, source_map, gaps)
+    if included_claims and len(themes) < 2:
+        themes = []
+        subq_ids = []
+        for claim in included_claims:
+            subq_id = claim.get("sub_question_id")
+            if subq_id and subq_id not in subq_ids:
+                subq_ids.append(subq_id)
+        for subq_id in subq_ids:
+            group = [claim for claim in included_claims
+                     if claim.get("sub_question_id") == subq_id]
+            themes.append(_theme_entry(
+                "T%02d" % (len(themes) + 1),
+                "子问题 %s 相关结论群" % subq_id, [], group, source_map, gaps,
+                "按子问题归属"))
+    if included_claims and len(themes) < 2 and gaps:
+        member_sources = sorted(source_map, key=_source_sort_key(source_map))
+        gap_ids = sorted({gap.get("sub_question_id") for gap in gaps if gap.get("sub_question_id")})
+        themes.append({
+            "theme_id": "T%02d" % (len(themes) + 1),
+            "theme": "边界与空白（无定位证据的维度）",
+            "definition": "按覆盖缺口归纳：%s 在已纳入来源中无定位证据，作为边界主题单列。" % (
+                "、".join(gap_ids) or "部分维度"),
+            "member_sources": member_sources,
+            "supporting_claim_ids": [],
+            "boundary": "仅记录未见定位证据的维度，不推断效应方向；成员来源 %s。" % (
+                "、".join(member_sources) or "无"),
+            "evidence_strength": "suggestive",
+            "strength_basis": "无定位证据，只呈现边界",
+            "stance_counts": {"supports": 0, "refutes": 0, "mixed": 0, "neutral": 0},
+            "sub_question_ids": gap_ids,
+        })
+    if included_claims and len(themes) < 2:
+        for source_id in sorted(source_map, key=_source_sort_key(source_map)):
+            group = [claim for claim in included_claims if claim.get("source_id") == source_id]
+            if not group:
+                continue
+            themes.append(_theme_entry(
+                "T%02d" % (len(themes) + 1),
+                "来源 %s 的结论群" % source_id, [], group, source_map, gaps,
+                "按来源归属"))
+    return themes
+
+
 def build_synthesis(question, sub_questions, evidence, claims, conflicts, coverage,
-                    sources, uncertainty, status):
+                    sources, uncertainty, status, themes=None):
     sections = []
     source_ids = [source["source_id"] for source in sources
                   if source.get("included_in_evidence", True)]
@@ -317,6 +656,46 @@ def build_synthesis(question, sub_questions, evidence, claims, conflicts, covera
             "citations": ["%s | %s" % (claim["source_id"], claim.get("locator", "")) for claim in group],
             "support_level": level,
             "caveats": (["conflict_unresolved"] if item.get("conflict_ids") else []),
+        })
+    claim_map = {claim["claim_id"]: claim for claim in claims}
+    for theme in themes or []:
+        group = [claim_map[claim_id] for claim_id in theme.get("supporting_claim_ids") or []
+                 if claim_id in claim_map]
+        counts = theme.get("stance_counts") or {}
+        sentences = [
+            "主题「%s」聚合 %d 个纳入来源（%s）的 %d 条结论：supports %d、refutes/mixed %d、neutral %d。" % (
+                theme.get("theme"), len(theme.get("member_sources") or []),
+                "、".join(theme.get("member_sources") or []) or "无",
+                len(group), counts.get("supports", 0),
+                counts.get("refutes", 0) + counts.get("mixed", 0),
+                counts.get("neutral", 0)),
+        ]
+        stance_parts = []
+        for stance, stance_label in (("supports", "支持方向"), ("refutes", "相反/无差异方向"),
+                                     ("mixed", "混合方向"), ("neutral", "背景/方法方向")):
+            subset = [claim for claim in group if claim.get("direction") == stance]
+            if not subset:
+                continue
+            stance_parts.append("%s：%s" % (stance_label, "；".join(
+                "%s（%s，support=%s）%s" % (
+                    claim["claim_id"], claim["source_id"], claim["support_level"],
+                    _citation(claim["source_id"], claim.get("locator", "")))
+                for claim in subset)))
+        if stance_parts:
+            sentences.append("按方向聚合：" + "；".join(stance_parts) + "。")
+        sentences.append("边界：%s；证据强度：%s（%s）；本主题为跨研究聚合，不替代逐条引文核验。" % (
+            (theme.get("boundary") or "未记录").rstrip("。"),
+            theme.get("evidence_strength"), theme.get("strength_basis") or "按 claim 等级聚合"))
+        sections.append({
+            "section_id": "theme_%s" % theme.get("theme_id", ""),
+            "heading": "主题 %s：%s" % (theme.get("theme_id", ""), theme.get("theme", "")),
+            "text": " ".join(sentences),
+            "claim_ids": [claim["claim_id"] for claim in group],
+            "citations": sorted({"%s | %s" % (claim["source_id"], claim.get("locator", ""))
+                                 for claim in group}),
+            "support_level": theme.get("evidence_strength", "suggestive"),
+            "caveats": ["主题由术语与结论方向聚合，不是外部领域共识。"] +
+                       (["conflict_unresolved"] if theme.get("evidence_strength") == "contested" else []),
         })
     conflict_sentences = []
     conflict_claims = []
