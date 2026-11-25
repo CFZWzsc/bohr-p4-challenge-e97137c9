@@ -116,6 +116,10 @@ DEFAULT_POLICY = {
         "peer_reviewed_points": 2.0,
         "study_design_points": 1.0,
     },
+    "themes": {"similarity_threshold": 0.3, "max_themes": 6, "anchor_terms": 4,
+               "synonyms": {}, "labels": {}},
+    "screening": {"min_text_chars": 40, "non_empirical_designs": [],
+                  "no_primary_outcome_patterns": [], "result_cue_patterns": []},
     "lexicon": {
         "间歇性禁食": ["intermittent fasting", "intermittent", "fasting"],
         "2型糖尿病": ["type 2 diabetes", "t2d", "type 2"],
@@ -1059,7 +1063,7 @@ def _with_file_reference(source, input_dir, policy):
     rel = os_relpath(candidate, input_dir)
     built, errors = sources_from_file(candidate, rel, policy)
     if errors or not built:
-        return source, {"path": str(candidate), "error": errors[0] if errors else "no_content"}
+        return source, {"path": rel, "error": errors[0] if errors else "no_content"}
     merged_sections = []
     for item in built:
         for section in item.get("sections", []):
@@ -1253,18 +1257,23 @@ def decompose(case, question, policy):
         derived = True
         base = question or "给定研究问题"
         raw_items = [
-            "核心证据：输入材料中哪些结论直接回答“%s”？" % base,
-            "方法与数据：这些研究采用了什么设计、样本与测量，差异在哪里？",
-            "反面证据：是否存在与主要结论相反、无显著差异或无效的证据？",
-            "边界与空白：现有材料在人群、场景、时间或结局上未覆盖什么？",
+            {"id": "Q1", "dimension": "population",
+             "question": "人群（population）：在“%s”中，证据覆盖的人群范围与关键特征（年龄、合并症、场景）是什么？" % base},
+            {"id": "Q2", "dimension": "intervention",
+             "question": "干预（intervention）：该问题中的干预如何定义、实施与量化（剂量、频次、时长），不同研究是否一致？"},
+            {"id": "Q3", "dimension": "outcome",
+             "question": "结局（outcome）：相对比较，干预对关键结局指标（方向与幅度）的证据是什么？"},
+            {"id": "Q4", "dimension": "comparator",
+             "question": "对照（comparator）：与何种对照或常规照护相比，结论是否一致，差异来自哪里？"},
         ]
     sub_questions = []
     seen_ids = set()
     for index, item in enumerate(raw_items[:8]):
         if isinstance(item, str):
-            ident, text = "", item
+            ident, text, dimension = "", item, ""
         else:
             ident, text = item.get("id", ""), item.get("question", "")
+            dimension = item.get("dimension", "")
         text = norm_space(text)
         if len(text) < 4:
             continue
@@ -1275,11 +1284,14 @@ def decompose(case, question, policy):
             candidate = "%s-%d" % (ident, counter)
             counter += 1
         seen_ids.add(candidate)
-        sub_questions.append({
+        sub_question = {
             "sub_question_id": candidate,
             "question": text,
             "source": "derived" if derived else "case",
-        })
+        }
+        if dimension:
+            sub_question["dimension"] = dimension
+        sub_questions.append(sub_question)
     return sub_questions, derived
 
 
@@ -1374,7 +1386,12 @@ def select_evidence(sources, sub_questions, policy, question=""):
         specific_terms = q_terms - question_terms
         specific_in_corpus = {term: doc_freq.get(term, 0) for term in specific_terms
                               if doc_freq.get(term, 0) > 0}
-        if specific_terms and not specific_in_corpus:
+        specific_mode = bool(specific_in_corpus)
+        if specific_terms and not specific_in_corpus and sub_question.get("source") != "derived":
+            # A case-declared sub-question whose distinctive anchors are absent
+            # is a coverage gap. Derived (PICO) questions keep their generic
+            # anchors so that a corpus without the dimension wording can still
+            # be searched.
             continue
         specific_mode = bool(specific_in_corpus)
         distinctive = {term for term, count in corpus_terms.items() if count <= generic_threshold}
