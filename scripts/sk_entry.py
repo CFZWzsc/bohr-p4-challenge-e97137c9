@@ -54,7 +54,8 @@ ALIASES = {
     "limitations": "limitations", "limitation": "limitations",
     "run_log": "run_log", "log": "run_log", "trace": "run_log",
     "method": "method", "protocol": "method", "procedure": "method",
-    "criteria": "criteria", "screening": "criteria",
+    "criteria": "criteria", "screening": "screening",
+    "themes": "themes", "theme": "themes", "thematic_groups": "themes",
     "sources": "sources", "evidence": "evidence", "claims": "claims",
     "case_id": "case_id", "input_id": "input_id",
 }
@@ -201,6 +202,8 @@ def compute_verification(payload):
                            if item.get("type") == "evidence_gap"}
     provided = contract.get("provided") or []
     present = contract.get("present") or {}
+    screening = payload.get("screening") or []
+    themes = payload.get("themes") or []
     checks = {
         "case_id_present": bool(payload.get("case_id") and payload.get("case_id") != "unknown"),
         "contract_keys_present": all(bool(present.get(name)) for name in provided),
@@ -211,6 +214,11 @@ def compute_verification(payload):
         "gaps_in_coverage": all(gap_id in gap_item_ids for gap_id in gap_ids),
         "gaps_in_limitations": all(gap_id in limitation_gap_ids for gap_id in gap_ids),
         "gaps_in_uncertainty": all(gap_id in uncertainty_gap_ids for gap_id in gap_ids),
+        "screening_covers_sources": len(screening) == len(payload.get("sources") or []),
+        "screening_has_decisions": all(entry.get("decision") in {"include", "exclude"}
+                                       for entry in screening),
+        "themes_have_members": all(theme.get("member_sources") for theme in themes),
+        "themes_min_two_when_claimed": len(themes) >= 2 or not claims,
     }
     verification = {
         "claims_total": len(claims),
@@ -373,13 +381,15 @@ def build_input_manifest(files, case_path, file_reports):
 def build_payload(case, case_path, input_dir, task_text, files, policy, case_errors):
     sources, duplicates, material_errors, material_notes, file_reports = sk_ingest.build_sources(
         case, input_dir, case_path, Path(input_dir) / "task.md", files, policy)
+    criteria, criteria_declared = extract_criteria(case)
+    screening = sk_analyze.build_screening(sources, criteria, criteria_declared, policy)
     sk_ingest.prepare_passages(sources, policy)
     question = sk_ingest.question_from_case(case, task_text)
     sub_questions, derived = sk_ingest.decompose(case, question, policy)
     evidence, pairs = sk_ingest.select_evidence(sources, sub_questions, policy, question)
     claims, conflicts = sk_analyze.build_claims(evidence, pairs, sources, sub_questions, policy)
     coverage = sk_analyze.build_coverage(sub_questions, evidence, claims, conflicts, sources, policy)
-    criteria, criteria_declared = extract_criteria(case)
+    themes = sk_analyze.build_themes(sources, claims, coverage, policy)
     usable_sources = [source for source in sources if source.get("included_in_evidence", True)]
     low_confidence_sources = [source for source in usable_sources
                               if source.get("low_confidence") or source.get("confidence") == "low"]
@@ -391,12 +401,21 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
     limitations = sk_analyze.build_limitations(
         question, sources, evidence, conflicts, coverage, duplicates, unreadable,
         derived, criteria_declared, status, low_confidence_sources)
+    excluded_sources = [entry for entry in screening if entry["decision"] == "exclude"]
+    if excluded_sources:
+        limitations.append({
+            "type": "screening_excluded",
+            "detail": "%d 个来源在筛选阶段被排除（%s）；准则代码与理由见 screening。" % (
+                len(excluded_sources),
+                "、".join("%s:%s" % (entry["source_id"], entry["criterion_code"])
+                          for entry in excluded_sources)),
+        })
     uncertainty = sk_analyze.build_uncertainty(
         question, sources, conflicts, coverage, duplicates, unreadable, derived,
         criteria_declared, low_confidence_sources, status)
     synthesis = sk_analyze.build_synthesis(
         question, sub_questions, evidence, claims, conflicts, coverage, sources,
-        uncertainty, status)
+        uncertainty, status, themes)
     case_id = case_identifier(case) or "unknown"
     input_id = case_id
     if input_id == "unknown" and case_path and Path(case_path).is_file():
@@ -408,9 +427,14 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
         {"step": "collect_sources", "status": "ok" if sources else "degraded",
          "detail": "来源 %d 个（去重 %d 个，不可读材料 %d 个）。" % (
              len(sources), len(duplicates), len(unreadable))},
+        {"step": "screen_sources", "status": "ok" if screening else "degraded",
+         "detail": "筛选 %d 条：纳入 %d、排除 %d（标准来自 case.criteria）。" % (
+             len(screening),
+             sum(1 for entry in screening if entry["decision"] == "include"),
+             len(excluded_sources))},
         {"step": "decompose_question", "status": "ok" if sub_questions else "degraded",
          "detail": "子问题 %d 个（%s）。" % (
-             len(sub_questions), "由流程生成" if derived else "取自案例")},
+             len(sub_questions), "由流程按 PICO 生成" if derived else "取自案例")},
         {"step": "extract_evidence", "status": "ok" if evidence else "degraded",
          "detail": "证据行 %d 条，覆盖 %d 个子问题。" % (
              len(evidence), len({subq_id for row in evidence for subq_id in row.get("sub_question_ids", [])}))},
@@ -420,6 +444,8 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
          "detail": "covered %d、thin %d、gap %d。" % (
              coverage["summary"]["covered"], coverage["summary"]["thin"],
              coverage["summary"]["gap"])},
+        {"step": "induce_themes", "status": "ok" if themes else "degraded",
+         "detail": "主题 %d 个（成员来源与支撑结论见 result.json 的 themes）。" % len(themes)},
         {"step": "synthesize", "status": "ok",
          "detail": "综合章节 %d 个。" % len(synthesis.get("sections") or [])},
     ]
@@ -430,6 +456,9 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
         "input_files": len(files),
         "sources": len(sources),
         "usable_sources": len(usable_sources),
+        "screening_included": sum(1 for entry in screening if entry["decision"] == "include"),
+        "screening_excluded": len(excluded_sources),
+        "themes": len(themes),
         "duplicates": len(duplicates),
         "sub_questions": len(sub_questions),
         "evidence_rows": len(evidence),
@@ -474,6 +503,8 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
             "included_in_evidence": source.get("included_in_evidence", True),
             "characters": len(source.get("text") or ""),
         } for source in sources],
+        "screening": screening,
+        "themes": themes,
         "evidence": evidence,
         "claims": claims,
         "conflicts": conflicts,
@@ -493,9 +524,11 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
             "pipeline": [
                 "question_decomposition",
                 "source_collection",
+                "screening",
                 "evidence_extraction",
                 "claim_binding",
                 "conflict_resolution",
+                "theme_induction",
                 "synthesis",
             ],
             "criteria": criteria,
@@ -503,6 +536,8 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
             "thresholds": threshold_map,
             "citation_format": "[source_id | locator]",
             "sub_questions_derived": derived,
+            "sub_question_dimensions": (["population", "intervention", "outcome", "comparator"]
+                                        if derived else []),
         },
         "input_manifest": build_input_manifest(files, case_path, file_reports),
         "contract_extras": {},
@@ -525,6 +560,8 @@ def failure_payload(case, case_path, error, files):
         "question": "",
         "sub_questions": [],
         "sources": [],
+        "screening": [],
+        "themes": [],
         "evidence": [],
         "claims": [],
         "conflicts": [],
