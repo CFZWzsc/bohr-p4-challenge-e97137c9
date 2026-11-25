@@ -10,8 +10,10 @@ description: "面向文献综述与深度研究的证据链工作流：把研究
 把一批给定材料（`case.json` + `task.md` + 材料文件）转成可复核的文献综述：
 
 - 研究问题与子问题分解；
+- 按案例声明的纳入/排除标准逐篇筛选（`screening`），未声明标准时标 `criteria_not_declared`；
 - 多来源、段落级证据抽取；
 - 每条论断绑定 `source_id`、`locator` 与逐字 `quote`；
+- 从纳入文献归纳主题（`themes`），按主题聚合支持/相反/中性结论；
 - 来源间矛盾显式并列，不静默裁决；
 - 逐子问题覆盖评估（covered / thin / gap）；
 - 结构化综合叙述、局限、不确定性与运行日志；
@@ -97,7 +99,7 @@ python scripts/run_skill.py --input examples/demo-case --work /app/work --out /a
 
 ## 检索与证据流程
 
-流程固定为六步，全部离线、确定性：
+流程固定为八步，全部离线、确定性：
 
 1. **Question decomposition（问题拆解）**
    - 从 `case.json` 读取研究问题；缺失时取 `task.md` 第一条有效正文。
@@ -106,21 +108,28 @@ python scripts/run_skill.py --input examples/demo-case --work /app/work --out /a
    - 读取 case 记录与输入目录全部支持格式材料。
    - 每条来源保留 `source_id`、标题、年份、venue、DOI、类型、定位前缀与可靠性（high / medium / low / unknown），可靠性依据写入 `reliability.basis`。
    - 按 DOI、规范化标题、全文哈希去重；重复项标 `duplicate_of`，不进入证据选择。
-3. **Evidence extraction（证据抽取）**
+3. **Screening（筛选）**
+   - 每篇来源输出一条 `screening[]`：`source_id`、`round`、`decision`（include/exclude）、`criterion_code`、`reason`、`checked_fields`。
+   - 纳入/排除标准取自案例 `criteria`；未声明时不臆造标准，全部来源标 `criteria_not_declared`。
+   - 无原始结局数据的叙述性综述、重复记录等在进入证据抽取前排除，并置 `included_in_evidence=false`。
+4. **Evidence extraction（证据抽取）**
    - 按字段/小节切句，跳过 references、acknowledgements、funding 等非证据段落。
    - 每个子问题按词项重叠 + IDF 选择有区分度的 passage；每子问题最多 8 条，每来源最多 2 条。
    - PDF 为增量启发式抽取；字符过少、加密或异常字符比例高时标 `low_confidence=true`。
-4. **Claim binding（论断绑定）**
+5. **Claim binding（论断绑定）**
    - 每条 claim 必须来自一条 evidence，携带 `locator`、`quote`、`evidence_id`。
    - `quote` 必须是来源文本的精确子串；生成后逐条做子串校验。
    - 没有 locator 或 quote 的内容不会成为 claim。
-5. **Conflict resolution（冲突处理）**
+6. **Conflict resolution（冲突处理）**
    - 同一子问题内出现 supports 与 refutes/mixed 时生成 conflict。
    - 双方 quote、locator、来源与事实差异并列保留；`resolution` 固定 `unresolved`。
    - 不选边、不平均、不把反面证据改写为套话。
-6. **Synthesis（综合）**
-   - 章节：范围 → 逐子问题 → 冲突 → 覆盖与空白 → 结论口径与不确定性。
-   - 每个实质句带 claim 级引用；gap 子问题明确“不作结论”。
+7. **Theme induction（主题归纳）**
+   - 仅从被纳入来源归纳主题，输出 `themes[]`：`theme`、`definition`、`member_sources`、`supporting_claim_ids`、`boundary`，并附 `evidence_strength`（established / suggestive / contested）。
+   - 主题由来源文本中的术语与结论方向聚合而成（配置见 `assets/policy.json#themes`），不硬编码固定主题名。
+8. **Synthesis（综合）**
+   - 章节：范围 → 逐子问题 → 主题归纳 → 冲突 → 覆盖与空白 → 结论口径与不确定性。
+   - 每个实质句带 claim 级引用；主题段落按 supports/refutes/neutral 聚合且标注证据强度；gap 子问题明确“不作结论”。
 
 ## 结论口径与引用格式
 
@@ -175,10 +184,10 @@ python scripts/run_skill.py --input examples/demo-case --work /app/work --out /a
 `result.json` 顶层固定包含：
 
 ```text
-case_id, input_id, status, question, sub_questions, sources, evidence, claims,
-conflicts, coverage, synthesis, limitations, uncertainty, run_log, criteria,
-method, input_manifest, verification, stats, errors, contract_extras,
-output_contract_fields
+case_id, input_id, status, question, sub_questions, sources, screening, themes,
+evidence, claims, conflicts, coverage, synthesis, limitations, uncertainty,
+run_log, criteria, method, input_manifest, verification, stats, errors,
+contract_extras, output_contract_fields
 ```
 
 同时逐字满足案例 `output_contract` 的每个字段：
@@ -190,14 +199,16 @@ output_contract_fields
 `report.md` 章节：
 
 1. 子问题与覆盖
-2. 来源清单
-3. 证据与论断（含逐字引文与 locator）
-4. 冲突（未裁决）
-5. 覆盖与空白
-6. 综合叙述
-7. 局限与不确定性
-8. 运行日志
-9. 统计
+2. 筛选（screening）
+3. 来源清单
+4. 证据与论断（含逐字引文与 locator）
+5. 主题归纳（Theme induction）
+6. 冲突（未裁决）
+7. 覆盖与空白
+8. 综合叙述
+9. 局限与不确定性
+10. 运行日志
+11. 统计
 
 `run-review.md` 章节：
 
@@ -236,6 +247,8 @@ output_contract_fields
 - [ ] `output_contract` 每个字段都在顶层，未知字段在 `contract_extras`；
 - [ ] 每条 claim 有 `evidence_id`、`locator`/`locators`、`quote`；
 - [ ] 每条 claim 的 `quote` 是对应 evidence 文本的精确子串（`quote_verified=true`）；
+- [ ] 每个来源在 `screening` 中都有一条含 `decision`、`criterion_code`、`reason`、`checked_fields` 的记录；未声明标准时为 `criteria_not_declared`；
+- [ ] `themes` 至少有 2 个（存在 claim 时），每个主题都有 `member_sources`、`supporting_claim_ids`、`boundary` 与 `evidence_strength`；
 - [ ] 每个非 gap 子问题至少有一条 claim；每个 gap 子问题在 `coverage.gaps`、`limitations`、`uncertainty` 三处都有记录；
 - [ ] 每个 conflict 的 `resolution=unresolved`，双方 positions 都存在；
 - [ ] `report.md` 中的 claim/source/conflict/gap 编号与 `result.json` 一致；
