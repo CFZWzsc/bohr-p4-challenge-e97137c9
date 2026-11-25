@@ -1,0 +1,1623 @@
+{
+  "case_id": "demo-if-t2d-001",
+  "input_id": "demo-if-t2d-001",
+  "status": "success",
+  "question": "间歇性禁食是否能改善2型糖尿病成人的血糖控制?",
+  "sub_questions": [
+    {
+      "sub_question_id": "Q1",
+      "question": "与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?",
+      "source": "case"
+    },
+    {
+      "sub_question_id": "Q2",
+      "question": "间歇性禁食在2型糖尿病成人中的依从性如何?",
+      "source": "case"
+    },
+    {
+      "sub_question_id": "Q3",
+      "question": "65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?",
+      "source": "case"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "S1",
+      "title": "Synthetic trial A: intermittent fasting and HbA1c at 12 weeks",
+      "year": 2022,
+      "language": "",
+      "venue": "Synthetic Demo Journal",
+      "doi": "10.0000/demo.s1",
+      "authors": "",
+      "study_type": "randomised controlled trial (12 weeks)",
+      "reliability": {
+        "level": "high",
+        "score": 4.0,
+        "basis": [
+          "doi",
+          "venue",
+          "year",
+          "study_design",
+          "explicit_reliability"
+        ]
+      },
+      "origin": "case.json",
+      "locator_prefix": "case.json#/sources/0",
+      "confidence": "high",
+      "low_confidence": false,
+      "confidence_notes": [],
+      "sections": [
+        "title",
+        "abstract"
+      ],
+      "duplicate_of": null,
+      "included_in_evidence": true,
+      "characters": 289
+    },
+    {
+      "source_id": "S2",
+      "title": "Synthetic trial B: intermittent fasting versus usual care at 24 weeks",
+      "year": 2023,
+      "language": "",
+      "venue": "Synthetic Demo Journal",
+      "doi": "10.0000/demo.s2",
+      "authors": "",
+      "study_type": "randomised controlled trial (24 weeks)",
+      "reliability": {
+        "level": "high",
+        "score": 4.0,
+        "basis": [
+          "doi",
+          "venue",
+          "year",
+          "study_design",
+          "explicit_reliability"
+        ]
+      },
+      "origin": "case.json",
+      "locator_prefix": "case.json#/sources/1",
+      "confidence": "high",
+      "low_confidence": false,
+      "confidence_notes": [],
+      "sections": [
+        "title",
+        "abstract"
+      ],
+      "duplicate_of": null,
+      "included_in_evidence": true,
+      "characters": 255
+    },
+    {
+      "source_id": "S3",
+      "title": "Synthetic narrative review: implementing intermittent fasting in diabetes care",
+      "year": 2024,
+      "language": "",
+      "venue": "Synthetic Review",
+      "doi": "10.0000/demo.s3",
+      "authors": "",
+      "study_type": "narrative review",
+      "reliability": {
+        "level": "medium",
+        "score": 3.0,
+        "basis": [
+          "doi",
+          "venue",
+          "year",
+          "explicit_reliability"
+        ]
+      },
+      "origin": "case.json",
+      "locator_prefix": "case.json#/sources/2",
+      "confidence": "high",
+      "low_confidence": false,
+      "confidence_notes": [],
+      "sections": [
+        "title",
+        "abstract"
+      ],
+      "duplicate_of": null,
+      "included_in_evidence": false,
+      "characters": 239
+    }
+  ],
+  "screening": [
+    {
+      "source_id": "S1",
+      "round": 2,
+      "decision": "include",
+      "criterion_code": "include",
+      "criterion_source": "case.criteria.include",
+      "criteria_text": "Only the three synthetic records in this demo case.",
+      "rule_source": "assets/policy.json#screening",
+      "criteria_declared": true,
+      "reason": "逐项核对声明的纳入/排除标准后纳入，进入证据抽取。",
+      "checked_fields": [
+        "title",
+        "study_type",
+        "abstract_or_full_text"
+      ]
+    },
+    {
+      "source_id": "S2",
+      "round": 2,
+      "decision": "include",
+      "criterion_code": "include",
+      "criterion_source": "case.criteria.include",
+      "criteria_text": "Only the three synthetic records in this demo case.",
+      "rule_source": "assets/policy.json#screening",
+      "criteria_declared": true,
+      "reason": "逐项核对声明的纳入/排除标准后纳入，进入证据抽取。",
+      "checked_fields": [
+        "title",
+        "study_type",
+        "abstract_or_full_text"
+      ]
+    },
+    {
+      "source_id": "S3",
+      "round": 2,
+      "decision": "exclude",
+      "criterion_code": "no_primary_outcome",
+      "criterion_source": "case.criteria.exclude",
+      "criteria_text": "External literature, network retrieval and real patient data.",
+      "rule_source": "assets/policy.json#screening.no_primary_outcome_patterns",
+      "criteria_declared": true,
+      "reason": "命中“no primary glycaemic outcome data”：该来源不提供原始结局数据，无法回答以结局为导向的子问题。",
+      "checked_fields": [
+        "title",
+        "study_type",
+        "abstract_or_full_text"
+      ]
+    }
+  ],
+  "themes": [
+    {
+      "theme_id": "T01",
+      "theme": "血糖结局（HbA1c）",
+      "definition": "血糖结局（HbA1c）：以来源文本中的术语 hba1c 为共同线索，归纳 2 个来源的 2 条结论。",
+      "member_sources": [
+        "S1",
+        "S2"
+      ],
+      "supporting_claim_ids": [
+        "C001",
+        "C002"
+      ],
+      "boundary": "仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3。",
+      "evidence_strength": "contested",
+      "strength_basis": "同一主题内支持与相反/无差异结论并存",
+      "stance_counts": {
+        "supports": 1,
+        "refutes": 1,
+        "mixed": 0,
+        "neutral": 0
+      },
+      "sub_question_ids": [
+        "Q1"
+      ]
+    },
+    {
+      "theme_id": "T02",
+      "theme": "依从性",
+      "definition": "依从性：以来源文本中的术语 adherence 为共同线索，归纳 2 个来源的 2 条结论。",
+      "member_sources": [
+        "S1",
+        "S2"
+      ],
+      "supporting_claim_ids": [
+        "C003",
+        "C004"
+      ],
+      "boundary": "仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3。",
+      "evidence_strength": "suggestive",
+      "strength_basis": "单一来源或证据等级不足，仅作提示性归纳",
+      "stance_counts": {
+        "supports": 0,
+        "refutes": 0,
+        "mixed": 0,
+        "neutral": 2
+      },
+      "sub_question_ids": [
+        "Q2"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "E001",
+      "source_id": "S1",
+      "sub_question_ids": [
+        "Q1"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/0#abstract#s1",
+      "quote": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.",
+      "text": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.",
+      "char_start": 0,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "diabete",
+        "fasting",
+        "hba1c",
+        "intermittent",
+        "type",
+        "化血",
+        "型糖",
+        "尿病",
+        "性禁",
+        "歇性",
+        "禁食",
+        "糖化"
+      ],
+      "score": 30.027,
+      "stance": "supports"
+    },
+    {
+      "evidence_id": "E002",
+      "source_id": "S2",
+      "sub_question_ids": [
+        "Q1"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/1#abstract#s1",
+      "quote": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.",
+      "text": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.",
+      "char_start": 0,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "fasting",
+        "hba1c",
+        "intermittent",
+        "化血",
+        "性禁",
+        "歇性",
+        "禁食",
+        "糖化",
+        "红蛋",
+        "蛋白",
+        "血糖",
+        "血红"
+      ],
+      "score": 23.0,
+      "stance": "refutes"
+    },
+    {
+      "evidence_id": "E003",
+      "source_id": "S1",
+      "sub_question_ids": [
+        "Q2"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/0#abstract#s2",
+      "quote": "Adherence was moderate in the fasting arm.",
+      "text": "Adherence was moderate in the fasting arm.",
+      "char_start": 185,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "adherence",
+        "fasting",
+        "从性",
+        "依从",
+        "性禁",
+        "歇性",
+        "禁食",
+        "间歇"
+      ],
+      "score": 14.0,
+      "stance": "neutral"
+    },
+    {
+      "evidence_id": "E004",
+      "source_id": "S2",
+      "sub_question_ids": [
+        "Q2"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/1#abstract#s2",
+      "quote": "Adherence was low in the fasting arm.",
+      "text": "Adherence was low in the fasting arm.",
+      "char_start": 148,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "adherence",
+        "fasting",
+        "从性",
+        "依从",
+        "性禁",
+        "歇性",
+        "禁食",
+        "间歇"
+      ],
+      "score": 14.0,
+      "stance": "neutral"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "C001",
+      "text": "[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：支持性证据——“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.”",
+      "sub_question_id": "Q1",
+      "support_level": "contested",
+      "direction": "supports",
+      "evidence_id": "E001",
+      "source_id": "S1",
+      "locator": "case.json#/sources/0#abstract#s1",
+      "locators": [
+        "case.json#/sources/0#abstract#s1"
+      ],
+      "quote": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": [
+        "CF01"
+      ]
+    },
+    {
+      "claim_id": "C002",
+      "text": "[S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：相反或无差异证据——“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.”",
+      "sub_question_id": "Q1",
+      "support_level": "contested",
+      "direction": "refutes",
+      "evidence_id": "E002",
+      "source_id": "S2",
+      "locator": "case.json#/sources/1#abstract#s1",
+      "locators": [
+        "case.json#/sources/1#abstract#s1"
+      ],
+      "quote": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": [
+        "CF01"
+      ]
+    },
+    {
+      "claim_id": "C003",
+      "text": "[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：背景或方法信息——“Adherence was moderate in the fasting arm.”",
+      "sub_question_id": "Q2",
+      "support_level": "limited",
+      "direction": "neutral",
+      "evidence_id": "E003",
+      "source_id": "S1",
+      "locator": "case.json#/sources/0#abstract#s2",
+      "locators": [
+        "case.json#/sources/0#abstract#s2"
+      ],
+      "quote": "Adherence was moderate in the fasting arm.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": []
+    },
+    {
+      "claim_id": "C004",
+      "text": "[S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：背景或方法信息——“Adherence was low in the fasting arm.”",
+      "sub_question_id": "Q2",
+      "support_level": "limited",
+      "direction": "neutral",
+      "evidence_id": "E004",
+      "source_id": "S2",
+      "locator": "case.json#/sources/1#abstract#s2",
+      "locators": [
+        "case.json#/sources/1#abstract#s2"
+      ],
+      "quote": "Adherence was low in the fasting arm.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": []
+    }
+  ],
+  "conflicts": [
+    {
+      "conflict_id": "CF01",
+      "sub_question_id": "Q1",
+      "question": "与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?",
+      "type": "opposing_conclusions",
+      "positions": [
+        {
+          "claim_id": "C001",
+          "source_id": "S1",
+          "stance": "supports",
+          "stance_label": "支持性证据",
+          "quote": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.",
+          "locator": "case.json#/sources/0#abstract#s1"
+        },
+        {
+          "claim_id": "C002",
+          "source_id": "S2",
+          "stance": "refutes",
+          "stance_label": "相反或无差异证据",
+          "quote": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.",
+          "locator": "case.json#/sources/1#abstract#s1"
+        }
+      ],
+      "factual_differences": [
+        {
+          "field": "year",
+          "values": {
+            "S1": "2022",
+            "S2": "2023"
+          }
+        },
+        {
+          "field": "study_type",
+          "values": {
+            "S1": "randomised controlled trial (12 weeks)",
+            "S2": "randomised controlled trial (24 weeks)"
+          }
+        }
+      ],
+      "possible_explanations": [
+        {
+          "basis": "metadata_and_method_caveat",
+          "caveat": true,
+          "text": "设计、人群、干预时长或结局测量的差异可能解释分歧；本运行不裁决，也不据此选择一方。"
+        }
+      ],
+      "handling": "并列保留双方证据与定位，不选边、不合并、不平均；需人工或全文方法学评价才能裁决。",
+      "resolution": "unresolved",
+      "unresolved": true
+    }
+  ],
+  "coverage": {
+    "items": [
+      {
+        "sub_question_id": "Q1",
+        "question": "与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?",
+        "status": "covered",
+        "source_count": 2,
+        "evidence_count": 2,
+        "claim_count": 2,
+        "source_ids": [
+          "S1",
+          "S2"
+        ],
+        "conflict_ids": [
+          "CF01"
+        ],
+        "missing": [],
+        "support_levels": {
+          "contested": 2
+        }
+      },
+      {
+        "sub_question_id": "Q2",
+        "question": "间歇性禁食在2型糖尿病成人中的依从性如何?",
+        "status": "covered",
+        "source_count": 2,
+        "evidence_count": 2,
+        "claim_count": 2,
+        "source_ids": [
+          "S1",
+          "S2"
+        ],
+        "conflict_ids": [],
+        "missing": [],
+        "support_levels": {
+          "limited": 2
+        }
+      },
+      {
+        "sub_question_id": "Q3",
+        "question": "65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?",
+        "status": "gap",
+        "source_count": 0,
+        "evidence_count": 0,
+        "claim_count": 0,
+        "source_ids": [],
+        "conflict_ids": [],
+        "missing": [
+          "locatable evidence for this sub-question"
+        ],
+        "support_levels": {}
+      }
+    ],
+    "gaps": [
+      {
+        "gap_id": "G01",
+        "sub_question_id": "Q3",
+        "question": "65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?",
+        "reason": "no_located_evidence",
+        "searched_sources": 2,
+        "evidence_count": 0
+      }
+    ],
+    "summary": {
+      "sub_questions": 3,
+      "covered": 2,
+      "thin": 0,
+      "gap": 1,
+      "sources": 2,
+      "evidence_rows": 4,
+      "claims": 4
+    },
+    "thresholds": {
+      "covered_min_sources": 2,
+      "covered_min_evidence": 2,
+      "thin_min_sources": 1,
+      "thin_min_evidence": 1
+    }
+  },
+  "synthesis": {
+    "sections": [
+      {
+        "section_id": "scope",
+        "heading": "研究问题与证据范围",
+        "text": "本报告回答：“间歇性禁食是否能改善2型糖尿病成人的血糖控制?”。输入包含 3 个来源（进入证据选择 2 个）、3 个子问题。所有结论仅以本批次可定位证据为界，不联网补充，也不超出材料作领域级推断。",
+        "claim_ids": [],
+        "citations": [
+          "[S1 | case.json#/sources/0]",
+          "[S2 | case.json#/sources/1]"
+        ],
+        "support_level": "context",
+        "caveats": [
+          "结论范围等于输入语料范围。"
+        ]
+      },
+      {
+        "section_id": "subq_Q1",
+        "heading": "Q1：covered",
+        "text": "针对 Q1（与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：支持性证据——“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]（C001；support=contested） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：相反或无差异证据——“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]（C002；support=contested） 该子问题存在未裁决分歧（CF01），双方证据并列保留，本运行不选边。",
+        "claim_ids": [
+          "C001",
+          "C002"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s1",
+          "S2 | case.json#/sources/1#abstract#s1"
+        ],
+        "support_level": "contested",
+        "caveats": [
+          "conflict_unresolved"
+        ]
+      },
+      {
+        "section_id": "subq_Q2",
+        "heading": "Q2：covered",
+        "text": "针对 Q2（间歇性禁食在2型糖尿病成人中的依从性如何?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：背景或方法信息——“Adherence was moderate in the fasting arm.” [S1 | case.json#/sources/0#abstract#s2]（C003；support=limited） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：背景或方法信息——“Adherence was low in the fasting arm.” [S2 | case.json#/sources/1#abstract#s2]（C004；support=limited）",
+        "claim_ids": [
+          "C003",
+          "C004"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s2",
+          "S2 | case.json#/sources/1#abstract#s2"
+        ],
+        "support_level": "moderate",
+        "caveats": []
+      },
+      {
+        "section_id": "subq_Q3",
+        "heading": "Q3（gap）",
+        "text": "针对 Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?），在本批次 3 个来源中未检索到可定位证据，覆盖状态为 gap。本运行不对该子问题作结论；该缺口已列入 coverage.gaps、limitations 与 uncertainty。",
+        "claim_ids": [],
+        "citations": [],
+        "support_level": "unsupported",
+        "caveats": [
+          "gap：不跨越证据范围扩展结论。"
+        ]
+      },
+      {
+        "section_id": "theme_T01",
+        "heading": "主题 T01：血糖结局（HbA1c）",
+        "text": "主题「血糖结局（HbA1c）」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 1、refutes/mixed 1、neutral 0。 按方向聚合：支持方向：C001（S1，support=contested）[S1 | case.json#/sources/0#abstract#s1]；相反/无差异方向：C002（S2，support=contested）[S2 | case.json#/sources/1#abstract#s1]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：contested（同一主题内支持与相反/无差异结论并存）；本主题为跨研究聚合，不替代逐条引文核验。",
+        "claim_ids": [
+          "C001",
+          "C002"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s1",
+          "S2 | case.json#/sources/1#abstract#s1"
+        ],
+        "support_level": "contested",
+        "caveats": [
+          "主题由术语与结论方向聚合，不是外部领域共识。",
+          "conflict_unresolved"
+        ]
+      },
+      {
+        "section_id": "theme_T02",
+        "heading": "主题 T02：依从性",
+        "text": "主题「依从性」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 0、refutes/mixed 0、neutral 2。 按方向聚合：背景/方法方向：C003（S1，support=limited）[S1 | case.json#/sources/0#abstract#s2]；C004（S2，support=limited）[S2 | case.json#/sources/1#abstract#s2]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：suggestive（单一来源或证据等级不足，仅作提示性归纳）；本主题为跨研究聚合，不替代逐条引文核验。",
+        "claim_ids": [
+          "C003",
+          "C004"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s2",
+          "S2 | case.json#/sources/1#abstract#s2"
+        ],
+        "support_level": "suggestive",
+        "caveats": [
+          "主题由术语与结论方向聚合，不是外部领域共识。"
+        ]
+      },
+      {
+        "section_id": "conflicts",
+        "heading": "分歧与冲突（未裁决）",
+        "text": "CF01（Q1）：S1（C001）报告支持性证据：“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]；S2（C002）报告相反或无差异证据：“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]。 可核对的事实差异：year=S1:2022 vs S2:2023；study_type=S1:randomised controlled trial (12 weeks) vs S2:randomised controlled trial (24 weeks)。处理：并列保留双方证据与定位，不选边、不合并、不平均；需人工或全文方法学评价才能裁决。",
+        "claim_ids": [
+          "C001",
+          "C002"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s1",
+          "S2 | case.json#/sources/1#abstract#s1"
+        ],
+        "support_level": "contested",
+        "caveats": [
+          "未裁决：不选边、不平均、不把反面证据改写为套话。"
+        ]
+      },
+      {
+        "section_id": "coverage",
+        "heading": "覆盖与空白",
+        "text": "本次输入共 3 个子问题：covered 2、thin 0、gap 1。 缺口：Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?）在 2 个来源中无定位证据。",
+        "claim_ids": [],
+        "citations": [],
+        "support_level": "context",
+        "caveats": [
+          "空白按具体证据缺口呈现，不使用泛化套话。"
+        ]
+      },
+      {
+        "section_id": "conclusion",
+        "heading": "结论口径与不确定性",
+        "text": "运行状态为 success。可作有限综合的子问题：Q1、Q2；其余子问题不作结论。 不确定性类型：evidence_gap、unresolved_conflict。",
+        "claim_ids": [],
+        "citations": [],
+        "support_level": "context",
+        "caveats": [
+          "结论不得超出 covered/thin 子问题与已定位证据。"
+        ]
+      }
+    ],
+    "narrative": "## 研究问题与证据范围\n本报告回答：“间歇性禁食是否能改善2型糖尿病成人的血糖控制?”。输入包含 3 个来源（进入证据选择 2 个）、3 个子问题。所有结论仅以本批次可定位证据为界，不联网补充，也不超出材料作领域级推断。\n\n## Q1：covered\n针对 Q1（与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：支持性证据——“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]（C001；support=contested） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：相反或无差异证据——“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]（C002；support=contested） 该子问题存在未裁决分歧（CF01），双方证据并列保留，本运行不选边。\n\n## Q2：covered\n针对 Q2（间歇性禁食在2型糖尿病成人中的依从性如何?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：背景或方法信息——“Adherence was moderate in the fasting arm.” [S1 | case.json#/sources/0#abstract#s2]（C003；support=limited） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：背景或方法信息——“Adherence was low in the fasting arm.” [S2 | case.json#/sources/1#abstract#s2]（C004；support=limited）\n\n## Q3（gap）\n针对 Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?），在本批次 3 个来源中未检索到可定位证据，覆盖状态为 gap。本运行不对该子问题作结论；该缺口已列入 coverage.gaps、limitations 与 uncertainty。\n\n## 主题 T01：血糖结局（HbA1c）\n主题「血糖结局（HbA1c）」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 1、refutes/mixed 1、neutral 0。 按方向聚合：支持方向：C001（S1，support=contested）[S1 | case.json#/sources/0#abstract#s1]；相反/无差异方向：C002（S2，support=contested）[S2 | case.json#/sources/1#abstract#s1]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：contested（同一主题内支持与相反/无差异结论并存）；本主题为跨研究聚合，不替代逐条引文核验。\n\n## 主题 T02：依从性\n主题「依从性」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 0、refutes/mixed 0、neutral 2。 按方向聚合：背景/方法方向：C003（S1，support=limited）[S1 | case.json#/sources/0#abstract#s2]；C004（S2，support=limited）[S2 | case.json#/sources/1#abstract#s2]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：suggestive（单一来源或证据等级不足，仅作提示性归纳）；本主题为跨研究聚合，不替代逐条引文核验。\n\n## 分歧与冲突（未裁决）\nCF01（Q1）：S1（C001）报告支持性证据：“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]；S2（C002）报告相反或无差异证据：“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]。 可核对的事实差异：year=S1:2022 vs S2:2023；study_type=S1:randomised controlled trial (12 weeks) vs S2:randomised controlled trial (24 weeks)。处理：并列保留双方证据与定位，不选边、不合并、不平均；需人工或全文方法学评价才能裁决。\n\n## 覆盖与空白\n本次输入共 3 个子问题：covered 2、thin 0、gap 1。 缺口：Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?）在 2 个来源中无定位证据。\n\n## 结论口径与不确定性\n运行状态为 success。可作有限综合的子问题：Q1、Q2；其余子问题不作结论。 不确定性类型：evidence_gap、unresolved_conflict。",
+    "citation_format": "[source_id | locator]，例如 [S1 | case.json#/sources/0#abstract#s1]",
+    "claim_level": true,
+    "status_note": "synthesis 由 claims/evidence/coverage 机械生成，未引入 result.json 之外的字段。"
+  },
+  "limitations": [
+    {
+      "type": "corpus_bounded",
+      "detail": "所有结论仅基于输入材料，未联网检索；结论范围等于本批次语料范围。"
+    },
+    {
+      "type": "passage_level_evidence",
+      "detail": "证据为段落级摘录与引用，未做全文方法学质量评价、偏倚评估或双人独立筛选。"
+    },
+    {
+      "type": "no_network",
+      "detail": "运行环境无网络访问，不能验证文献是否真实存在、是否被撤稿或是否有更新版本。"
+    },
+    {
+      "type": "evidence_gap",
+      "sub_question_id": "Q3",
+      "detail": "子问题 Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?）在 2 个来源中未检索到可定位证据，覆盖状态为 gap，未作结论。"
+    },
+    {
+      "type": "unresolved_conflict",
+      "detail": "1 组冲突未裁决；双方证据与定位已并列保留，需人工或全文方法学评价。"
+    },
+    {
+      "type": "screening_excluded",
+      "detail": "1 个来源在筛选阶段被排除（S3:no_primary_outcome）；准则代码与理由见 screening。"
+    }
+  ],
+  "uncertainty": [
+    {
+      "type": "unresolved_conflict",
+      "sub_question_id": "Q1",
+      "conflict_id": "CF01",
+      "detail": "子问题 Q1 存在相反结论，已并列保留，未裁决。",
+      "human_confirm": true
+    },
+    {
+      "type": "evidence_gap",
+      "sub_question_id": "Q3",
+      "gap_id": "G01",
+      "detail": "子问题 Q3 在输入材料中无定位证据，未作结论。",
+      "human_confirm": true
+    }
+  ],
+  "run_log": [
+    {
+      "step": "load_input",
+      "status": "ok",
+      "detail": "读取 case.json 与 task.md；输入文件 1 个，解析错误 0 个。"
+    },
+    {
+      "step": "collect_sources",
+      "status": "ok",
+      "detail": "来源 3 个（去重 0 个，不可读材料 0 个）。"
+    },
+    {
+      "step": "screen_sources",
+      "status": "ok",
+      "detail": "筛选 3 条：纳入 2、排除 1（标准来自 case.criteria）。"
+    },
+    {
+      "step": "decompose_question",
+      "status": "ok",
+      "detail": "子问题 3 个（取自案例）。"
+    },
+    {
+      "step": "extract_evidence",
+      "status": "ok",
+      "detail": "证据行 4 条，覆盖 2 个子问题。"
+    },
+    {
+      "step": "bind_claims",
+      "status": "ok",
+      "detail": "论断 4 条；冲突 1 组。"
+    },
+    {
+      "step": "assess_coverage",
+      "status": "ok",
+      "detail": "covered 2、thin 0、gap 1。"
+    },
+    {
+      "step": "induce_themes",
+      "status": "ok",
+      "detail": "主题 2 个（成员来源与支撑结论见 result.json 的 themes）。"
+    },
+    {
+      "step": "synthesize",
+      "status": "ok",
+      "detail": "综合章节 9 个。"
+    }
+  ],
+  "criteria": {
+    "criteria": {
+      "scope": "Synthetic demonstration only; no real clinical claim is made or implied.",
+      "include": "Only the three synthetic records in this demo case.",
+      "exclude": "External literature, network retrieval and real patient data."
+    }
+  },
+  "method": {
+    "name": "deep-research-evidence-review",
+    "version": "1.0.0",
+    "policy_version": "1.0.0",
+    "runtime": "python3 stdlib",
+    "network": false,
+    "deterministic": true,
+    "pipeline": [
+      "question_decomposition",
+      "source_collection",
+      "screening",
+      "evidence_extraction",
+      "claim_binding",
+      "conflict_resolution",
+      "theme_induction",
+      "synthesis"
+    ],
+    "criteria": {
+      "criteria": {
+        "scope": "Synthetic demonstration only; no real clinical claim is made or implied.",
+        "include": "Only the three synthetic records in this demo case.",
+        "exclude": "External literature, network retrieval and real patient data."
+      }
+    },
+    "criteria_declared": true,
+    "thresholds": {
+      "coverage": {
+        "covered_min_sources": 2,
+        "covered_min_evidence": 2,
+        "thin_min_sources": 1,
+        "thin_min_evidence": 1
+      },
+      "support_levels": {
+        "strong": {
+          "rule": "At least two independent high-reliability sources in the same sub-question agree and no conflict is detected.",
+          "min_sources": 2,
+          "min_evidence": 3,
+          "requires_high_reliability": true
+        },
+        "moderate": {
+          "rule": "One high-reliability source with an exact located quote, or at least two sources with consistent direction.",
+          "min_sources": 1,
+          "min_evidence": 1,
+          "requires_high_reliability": false
+        },
+        "limited": {
+          "rule": "One medium/low-reliability source, a title-only passage, or text extracted with low confidence.",
+          "min_sources": 1,
+          "min_evidence": 1,
+          "requires_high_reliability": false
+        },
+        "contested": {
+          "rule": "Opposing stances (supports vs refutes/mixed) are present in the same sub-question; claims inherit this level and no side is selected.",
+          "min_sources": 2,
+          "min_evidence": 2,
+          "requires_high_reliability": false
+        },
+        "unsupported": {
+          "rule": "No located evidence exists for a sub-question; no claim is emitted and the sub-question is marked as a coverage gap.",
+          "min_sources": 0,
+          "min_evidence": 0,
+          "requires_high_reliability": false
+        }
+      },
+      "policy_version": "1.0.0"
+    },
+    "citation_format": "[source_id | locator]",
+    "sub_questions_derived": false,
+    "sub_question_dimensions": []
+  },
+  "input_manifest": [
+    {
+      "path": "case.json",
+      "kind": "case",
+      "bytes": 3011,
+      "sha256": "8ea67ee65cfad09f20ea0dc256787aff79c4a4e2869f31d09084676205822b50",
+      "status": "present",
+      "source_count": 0
+    }
+  ],
+  "contract_extras": {},
+  "output_contract_fields": {
+    "provided": [
+      "report",
+      "findings",
+      "references",
+      "citations",
+      "gaps",
+      "notes",
+      "status"
+    ],
+    "present": {
+      "report": true,
+      "findings": true,
+      "references": true,
+      "citations": true,
+      "gaps": true,
+      "notes": true,
+      "status": true
+    },
+    "mapping": {
+      "report": "synthesis",
+      "findings": "claims",
+      "references": "sources",
+      "citations": "evidence",
+      "gaps": "coverage",
+      "notes": "uncertainty",
+      "status": "status"
+    },
+    "missing": [],
+    "unknown": []
+  },
+  "errors": [],
+  "stats": {
+    "input_files": 1,
+    "sources": 3,
+    "usable_sources": 2,
+    "screening_included": 2,
+    "screening_excluded": 1,
+    "themes": 2,
+    "duplicates": 0,
+    "sub_questions": 3,
+    "evidence_rows": 4,
+    "claims": 4,
+    "conflicts": 1,
+    "covered": 2,
+    "thin": 0,
+    "gaps": 1,
+    "low_confidence_sources": 0,
+    "unreadable_materials": 0,
+    "network": "disabled",
+    "deterministic": true
+  },
+  "material_notes": [],
+  "report": {
+    "sections": [
+      {
+        "section_id": "scope",
+        "heading": "研究问题与证据范围",
+        "text": "本报告回答：“间歇性禁食是否能改善2型糖尿病成人的血糖控制?”。输入包含 3 个来源（进入证据选择 2 个）、3 个子问题。所有结论仅以本批次可定位证据为界，不联网补充，也不超出材料作领域级推断。",
+        "claim_ids": [],
+        "citations": [
+          "[S1 | case.json#/sources/0]",
+          "[S2 | case.json#/sources/1]"
+        ],
+        "support_level": "context",
+        "caveats": [
+          "结论范围等于输入语料范围。"
+        ]
+      },
+      {
+        "section_id": "subq_Q1",
+        "heading": "Q1：covered",
+        "text": "针对 Q1（与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：支持性证据——“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]（C001；support=contested） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：相反或无差异证据——“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]（C002；support=contested） 该子问题存在未裁决分歧（CF01），双方证据并列保留，本运行不选边。",
+        "claim_ids": [
+          "C001",
+          "C002"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s1",
+          "S2 | case.json#/sources/1#abstract#s1"
+        ],
+        "support_level": "contested",
+        "caveats": [
+          "conflict_unresolved"
+        ]
+      },
+      {
+        "section_id": "subq_Q2",
+        "heading": "Q2：covered",
+        "text": "针对 Q2（间歇性禁食在2型糖尿病成人中的依从性如何?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：背景或方法信息——“Adherence was moderate in the fasting arm.” [S1 | case.json#/sources/0#abstract#s2]（C003；support=limited） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：背景或方法信息——“Adherence was low in the fasting arm.” [S2 | case.json#/sources/1#abstract#s2]（C004；support=limited）",
+        "claim_ids": [
+          "C003",
+          "C004"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s2",
+          "S2 | case.json#/sources/1#abstract#s2"
+        ],
+        "support_level": "moderate",
+        "caveats": []
+      },
+      {
+        "section_id": "subq_Q3",
+        "heading": "Q3（gap）",
+        "text": "针对 Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?），在本批次 3 个来源中未检索到可定位证据，覆盖状态为 gap。本运行不对该子问题作结论；该缺口已列入 coverage.gaps、limitations 与 uncertainty。",
+        "claim_ids": [],
+        "citations": [],
+        "support_level": "unsupported",
+        "caveats": [
+          "gap：不跨越证据范围扩展结论。"
+        ]
+      },
+      {
+        "section_id": "theme_T01",
+        "heading": "主题 T01：血糖结局（HbA1c）",
+        "text": "主题「血糖结局（HbA1c）」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 1、refutes/mixed 1、neutral 0。 按方向聚合：支持方向：C001（S1，support=contested）[S1 | case.json#/sources/0#abstract#s1]；相反/无差异方向：C002（S2，support=contested）[S2 | case.json#/sources/1#abstract#s1]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：contested（同一主题内支持与相反/无差异结论并存）；本主题为跨研究聚合，不替代逐条引文核验。",
+        "claim_ids": [
+          "C001",
+          "C002"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s1",
+          "S2 | case.json#/sources/1#abstract#s1"
+        ],
+        "support_level": "contested",
+        "caveats": [
+          "主题由术语与结论方向聚合，不是外部领域共识。",
+          "conflict_unresolved"
+        ]
+      },
+      {
+        "section_id": "theme_T02",
+        "heading": "主题 T02：依从性",
+        "text": "主题「依从性」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 0、refutes/mixed 0、neutral 2。 按方向聚合：背景/方法方向：C003（S1，support=limited）[S1 | case.json#/sources/0#abstract#s2]；C004（S2，support=limited）[S2 | case.json#/sources/1#abstract#s2]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：suggestive（单一来源或证据等级不足，仅作提示性归纳）；本主题为跨研究聚合，不替代逐条引文核验。",
+        "claim_ids": [
+          "C003",
+          "C004"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s2",
+          "S2 | case.json#/sources/1#abstract#s2"
+        ],
+        "support_level": "suggestive",
+        "caveats": [
+          "主题由术语与结论方向聚合，不是外部领域共识。"
+        ]
+      },
+      {
+        "section_id": "conflicts",
+        "heading": "分歧与冲突（未裁决）",
+        "text": "CF01（Q1）：S1（C001）报告支持性证据：“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]；S2（C002）报告相反或无差异证据：“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]。 可核对的事实差异：year=S1:2022 vs S2:2023；study_type=S1:randomised controlled trial (12 weeks) vs S2:randomised controlled trial (24 weeks)。处理：并列保留双方证据与定位，不选边、不合并、不平均；需人工或全文方法学评价才能裁决。",
+        "claim_ids": [
+          "C001",
+          "C002"
+        ],
+        "citations": [
+          "S1 | case.json#/sources/0#abstract#s1",
+          "S2 | case.json#/sources/1#abstract#s1"
+        ],
+        "support_level": "contested",
+        "caveats": [
+          "未裁决：不选边、不平均、不把反面证据改写为套话。"
+        ]
+      },
+      {
+        "section_id": "coverage",
+        "heading": "覆盖与空白",
+        "text": "本次输入共 3 个子问题：covered 2、thin 0、gap 1。 缺口：Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?）在 2 个来源中无定位证据。",
+        "claim_ids": [],
+        "citations": [],
+        "support_level": "context",
+        "caveats": [
+          "空白按具体证据缺口呈现，不使用泛化套话。"
+        ]
+      },
+      {
+        "section_id": "conclusion",
+        "heading": "结论口径与不确定性",
+        "text": "运行状态为 success。可作有限综合的子问题：Q1、Q2；其余子问题不作结论。 不确定性类型：evidence_gap、unresolved_conflict。",
+        "claim_ids": [],
+        "citations": [],
+        "support_level": "context",
+        "caveats": [
+          "结论不得超出 covered/thin 子问题与已定位证据。"
+        ]
+      }
+    ],
+    "narrative": "## 研究问题与证据范围\n本报告回答：“间歇性禁食是否能改善2型糖尿病成人的血糖控制?”。输入包含 3 个来源（进入证据选择 2 个）、3 个子问题。所有结论仅以本批次可定位证据为界，不联网补充，也不超出材料作领域级推断。\n\n## Q1：covered\n针对 Q1（与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：支持性证据——“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]（C001；support=contested） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：相反或无差异证据——“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]（C002；support=contested） 该子问题存在未裁决分歧（CF01），双方证据并列保留，本运行不选边。\n\n## Q2：covered\n针对 Q2（间歇性禁食在2型糖尿病成人中的依从性如何?）：[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：背景或方法信息——“Adherence was moderate in the fasting arm.” [S1 | case.json#/sources/0#abstract#s2]（C003；support=limited） [S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：背景或方法信息——“Adherence was low in the fasting arm.” [S2 | case.json#/sources/1#abstract#s2]（C004；support=limited）\n\n## Q3（gap）\n针对 Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?），在本批次 3 个来源中未检索到可定位证据，覆盖状态为 gap。本运行不对该子问题作结论；该缺口已列入 coverage.gaps、limitations 与 uncertainty。\n\n## 主题 T01：血糖结局（HbA1c）\n主题「血糖结局（HbA1c）」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 1、refutes/mixed 1、neutral 0。 按方向聚合：支持方向：C001（S1，support=contested）[S1 | case.json#/sources/0#abstract#s1]；相反/无差异方向：C002（S2，support=contested）[S2 | case.json#/sources/1#abstract#s1]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：contested（同一主题内支持与相反/无差异结论并存）；本主题为跨研究聚合，不替代逐条引文核验。\n\n## 主题 T02：依从性\n主题「依从性」聚合 2 个纳入来源（S1、S2）的 2 条结论：supports 0、refutes/mixed 0、neutral 2。 按方向聚合：背景/方法方向：C003（S1，support=limited）[S1 | case.json#/sources/0#abstract#s2]；C004（S2，support=limited）[S2 | case.json#/sources/1#abstract#s2]。 边界：仅覆盖本批次 2 个纳入来源、2 条结论；不覆盖无定位证据的子问题 Q3；证据强度：suggestive（单一来源或证据等级不足，仅作提示性归纳）；本主题为跨研究聚合，不替代逐条引文核验。\n\n## 分歧与冲突（未裁决）\nCF01（Q1）：S1（C001）报告支持性证据：“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.” [S1 | case.json#/sources/0#abstract#s1]；S2（C002）报告相反或无差异证据：“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.” [S2 | case.json#/sources/1#abstract#s1]。 可核对的事实差异：year=S1:2022 vs S2:2023；study_type=S1:randomised controlled trial (12 weeks) vs S2:randomised controlled trial (24 weeks)。处理：并列保留双方证据与定位，不选边、不合并、不平均；需人工或全文方法学评价才能裁决。\n\n## 覆盖与空白\n本次输入共 3 个子问题：covered 2、thin 0、gap 1。 缺口：Q3（65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?）在 2 个来源中无定位证据。\n\n## 结论口径与不确定性\n运行状态为 success。可作有限综合的子问题：Q1、Q2；其余子问题不作结论。 不确定性类型：evidence_gap、unresolved_conflict。",
+    "citation_format": "[source_id | locator]，例如 [S1 | case.json#/sources/0#abstract#s1]",
+    "claim_level": true,
+    "status_note": "synthesis 由 claims/evidence/coverage 机械生成，未引入 result.json 之外的字段。"
+  },
+  "findings": [
+    {
+      "claim_id": "C001",
+      "text": "[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：支持性证据——“In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.”",
+      "sub_question_id": "Q1",
+      "support_level": "contested",
+      "direction": "supports",
+      "evidence_id": "E001",
+      "source_id": "S1",
+      "locator": "case.json#/sources/0#abstract#s1",
+      "locators": [
+        "case.json#/sources/0#abstract#s1"
+      ],
+      "quote": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": [
+        "CF01"
+      ]
+    },
+    {
+      "claim_id": "C002",
+      "text": "[S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：相反或无差异证据——“In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.”",
+      "sub_question_id": "Q1",
+      "support_level": "contested",
+      "direction": "refutes",
+      "evidence_id": "E002",
+      "source_id": "S2",
+      "locator": "case.json#/sources/1#abstract#s1",
+      "locators": [
+        "case.json#/sources/1#abstract#s1"
+      ],
+      "quote": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": [
+        "CF01"
+      ]
+    },
+    {
+      "claim_id": "C003",
+      "text": "[S1] Synthetic trial A: intermittent fasting and HbA1c at 12 weeks：背景或方法信息——“Adherence was moderate in the fasting arm.”",
+      "sub_question_id": "Q2",
+      "support_level": "limited",
+      "direction": "neutral",
+      "evidence_id": "E003",
+      "source_id": "S1",
+      "locator": "case.json#/sources/0#abstract#s2",
+      "locators": [
+        "case.json#/sources/0#abstract#s2"
+      ],
+      "quote": "Adherence was moderate in the fasting arm.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": []
+    },
+    {
+      "claim_id": "C004",
+      "text": "[S2] Synthetic trial B: intermittent fasting versus usual care at 24 weeks：背景或方法信息——“Adherence was low in the fasting arm.”",
+      "sub_question_id": "Q2",
+      "support_level": "limited",
+      "direction": "neutral",
+      "evidence_id": "E004",
+      "source_id": "S2",
+      "locator": "case.json#/sources/1#abstract#s2",
+      "locators": [
+        "case.json#/sources/1#abstract#s2"
+      ],
+      "quote": "Adherence was low in the fasting arm.",
+      "quote_verified": true,
+      "evidence_confidence": "high",
+      "conflict_ids": []
+    }
+  ],
+  "references": [
+    {
+      "source_id": "S1",
+      "title": "Synthetic trial A: intermittent fasting and HbA1c at 12 weeks",
+      "year": 2022,
+      "language": "",
+      "venue": "Synthetic Demo Journal",
+      "doi": "10.0000/demo.s1",
+      "authors": "",
+      "study_type": "randomised controlled trial (12 weeks)",
+      "reliability": {
+        "level": "high",
+        "score": 4.0,
+        "basis": [
+          "doi",
+          "venue",
+          "year",
+          "study_design",
+          "explicit_reliability"
+        ]
+      },
+      "origin": "case.json",
+      "locator_prefix": "case.json#/sources/0",
+      "confidence": "high",
+      "low_confidence": false,
+      "confidence_notes": [],
+      "sections": [
+        "title",
+        "abstract"
+      ],
+      "duplicate_of": null,
+      "included_in_evidence": true,
+      "characters": 289
+    },
+    {
+      "source_id": "S2",
+      "title": "Synthetic trial B: intermittent fasting versus usual care at 24 weeks",
+      "year": 2023,
+      "language": "",
+      "venue": "Synthetic Demo Journal",
+      "doi": "10.0000/demo.s2",
+      "authors": "",
+      "study_type": "randomised controlled trial (24 weeks)",
+      "reliability": {
+        "level": "high",
+        "score": 4.0,
+        "basis": [
+          "doi",
+          "venue",
+          "year",
+          "study_design",
+          "explicit_reliability"
+        ]
+      },
+      "origin": "case.json",
+      "locator_prefix": "case.json#/sources/1",
+      "confidence": "high",
+      "low_confidence": false,
+      "confidence_notes": [],
+      "sections": [
+        "title",
+        "abstract"
+      ],
+      "duplicate_of": null,
+      "included_in_evidence": true,
+      "characters": 255
+    },
+    {
+      "source_id": "S3",
+      "title": "Synthetic narrative review: implementing intermittent fasting in diabetes care",
+      "year": 2024,
+      "language": "",
+      "venue": "Synthetic Review",
+      "doi": "10.0000/demo.s3",
+      "authors": "",
+      "study_type": "narrative review",
+      "reliability": {
+        "level": "medium",
+        "score": 3.0,
+        "basis": [
+          "doi",
+          "venue",
+          "year",
+          "explicit_reliability"
+        ]
+      },
+      "origin": "case.json",
+      "locator_prefix": "case.json#/sources/2",
+      "confidence": "high",
+      "low_confidence": false,
+      "confidence_notes": [],
+      "sections": [
+        "title",
+        "abstract"
+      ],
+      "duplicate_of": null,
+      "included_in_evidence": false,
+      "characters": 239
+    }
+  ],
+  "citations": [
+    {
+      "evidence_id": "E001",
+      "source_id": "S1",
+      "sub_question_ids": [
+        "Q1"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/0#abstract#s1",
+      "quote": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.",
+      "text": "In this synthetic demonstration record, adults with type 2 diabetes assigned to intermittent fasting showed a significant reduction in HbA1c at 12 weeks compared with the control diet.",
+      "char_start": 0,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "diabete",
+        "fasting",
+        "hba1c",
+        "intermittent",
+        "type",
+        "化血",
+        "型糖",
+        "尿病",
+        "性禁",
+        "歇性",
+        "禁食",
+        "糖化"
+      ],
+      "score": 30.027,
+      "stance": "supports"
+    },
+    {
+      "evidence_id": "E002",
+      "source_id": "S2",
+      "sub_question_ids": [
+        "Q1"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/1#abstract#s1",
+      "quote": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.",
+      "text": "In this synthetic demonstration record, the trial found no significant difference in HbA1c between intermittent fasting and usual care at 24 weeks.",
+      "char_start": 0,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "fasting",
+        "hba1c",
+        "intermittent",
+        "化血",
+        "性禁",
+        "歇性",
+        "禁食",
+        "糖化",
+        "红蛋",
+        "蛋白",
+        "血糖",
+        "血红"
+      ],
+      "score": 23.0,
+      "stance": "refutes"
+    },
+    {
+      "evidence_id": "E003",
+      "source_id": "S1",
+      "sub_question_ids": [
+        "Q2"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/0#abstract#s2",
+      "quote": "Adherence was moderate in the fasting arm.",
+      "text": "Adherence was moderate in the fasting arm.",
+      "char_start": 185,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "adherence",
+        "fasting",
+        "从性",
+        "依从",
+        "性禁",
+        "歇性",
+        "禁食",
+        "间歇"
+      ],
+      "score": 14.0,
+      "stance": "neutral"
+    },
+    {
+      "evidence_id": "E004",
+      "source_id": "S2",
+      "sub_question_ids": [
+        "Q2"
+      ],
+      "section": "abstract",
+      "locator": "case.json#/sources/1#abstract#s2",
+      "quote": "Adherence was low in the fasting arm.",
+      "text": "Adherence was low in the fasting arm.",
+      "char_start": 148,
+      "confidence": "high",
+      "evidence_strength": "direct",
+      "terms_matched": [
+        "adherence",
+        "fasting",
+        "从性",
+        "依从",
+        "性禁",
+        "歇性",
+        "禁食",
+        "间歇"
+      ],
+      "score": 14.0,
+      "stance": "neutral"
+    }
+  ],
+  "gaps": {
+    "items": [
+      {
+        "sub_question_id": "Q1",
+        "question": "与常规饮食相比,间歇性禁食是否改善2型糖尿病成人的HbA1c等血糖指标?",
+        "status": "covered",
+        "source_count": 2,
+        "evidence_count": 2,
+        "claim_count": 2,
+        "source_ids": [
+          "S1",
+          "S2"
+        ],
+        "conflict_ids": [
+          "CF01"
+        ],
+        "missing": [],
+        "support_levels": {
+          "contested": 2
+        }
+      },
+      {
+        "sub_question_id": "Q2",
+        "question": "间歇性禁食在2型糖尿病成人中的依从性如何?",
+        "status": "covered",
+        "source_count": 2,
+        "evidence_count": 2,
+        "claim_count": 2,
+        "source_ids": [
+          "S1",
+          "S2"
+        ],
+        "conflict_ids": [],
+        "missing": [],
+        "support_levels": {
+          "limited": 2
+        }
+      },
+      {
+        "sub_question_id": "Q3",
+        "question": "65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?",
+        "status": "gap",
+        "source_count": 0,
+        "evidence_count": 0,
+        "claim_count": 0,
+        "source_ids": [],
+        "conflict_ids": [],
+        "missing": [
+          "locatable evidence for this sub-question"
+        ],
+        "support_levels": {}
+      }
+    ],
+    "gaps": [
+      {
+        "gap_id": "G01",
+        "sub_question_id": "Q3",
+        "question": "65岁以上老年2型糖尿病患者的长期(≥12个月)心血管结局证据如何?",
+        "reason": "no_located_evidence",
+        "searched_sources": 2,
+        "evidence_count": 0
+      }
+    ],
+    "summary": {
+      "sub_questions": 3,
+      "covered": 2,
+      "thin": 0,
+      "gap": 1,
+      "sources": 2,
+      "evidence_rows": 4,
+      "claims": 4
+    },
+    "thresholds": {
+      "covered_min_sources": 2,
+      "covered_min_evidence": 2,
+      "thin_min_sources": 1,
+      "thin_min_evidence": 1
+    }
+  },
+  "notes": [
+    {
+      "type": "unresolved_conflict",
+      "sub_question_id": "Q1",
+      "conflict_id": "CF01",
+      "detail": "子问题 Q1 存在相反结论，已并列保留，未裁决。",
+      "human_confirm": true
+    },
+    {
+      "type": "evidence_gap",
+      "sub_question_id": "Q3",
+      "gap_id": "G01",
+      "detail": "子问题 Q3 在输入材料中无定位证据，未作结论。",
+      "human_confirm": true
+    }
+  ],
+  "prisma": {
+    "n_identified": 3,
+    "n_duplicates": 0,
+    "n_screened": 3,
+    "n_excluded_by_code": 1,
+    "n_included": 2
+  },
+  "quote_check_summary": {
+    "checked": 4,
+    "verified": 4,
+    "not_found": 0
+  },
+  "boundary": {
+    "scanned": 15,
+    "ok": true,
+    "hits": []
+  },
+  "gates": [
+    {
+      "gate": "case_contract",
+      "passed": true,
+      "detail": "case_id 存在且 output_contract 每个字段都在顶层。"
+    },
+    {
+      "gate": "quote_integrity",
+      "passed": true,
+      "detail": "每条 claim 有 locator 与 quote，且 quote 是证据原文的精确子串。"
+    },
+    {
+      "gate": "strength_consistency",
+      "passed": true,
+      "detail": "established 主题不含相反/混合证据；冲突 claim 标为 contested。"
+    },
+    {
+      "gate": "prisma_balance",
+      "passed": true,
+      "detail": "identified - duplicates = screened；screened - excluded = included 且等于进入证据的来源数。"
+    }
+  ],
+  "self_check": [
+    {
+      "item": "boundary_clean",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "case_id_present",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "claims_have_locator",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "claims_have_quote",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "conflict_claims_contested",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "conflicts_unresolved",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "contract_keys_present",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "established_has_no_refutes",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "gaps_in_coverage",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "gaps_in_limitations",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "gaps_in_uncertainty",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "prisma_balanced",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "quotes_verified_substring",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "report_consistent",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "screening_covers_sources",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "screening_exclusions_have_reason",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "screening_has_decisions",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "themes_have_members",
+      "template_value": true,
+      "match": true
+    },
+    {
+      "item": "themes_min_two_when_claimed",
+      "template_value": true,
+      "match": true
+    }
+  ],
+  "validator_verdict": "pass",
+  "verification": {
+    "claims_total": 4,
+    "claims_with_locator": 4,
+    "claims_with_quote": 4,
+    "quotes_verified_substring": 4,
+    "conflicts_total": 1,
+    "conflicts_unresolved": 1,
+    "gaps_total": 1,
+    "gaps_in_coverage": 1,
+    "gaps_in_limitations": 1,
+    "gaps_in_uncertainty": 1,
+    "contract_keys_total": 7,
+    "contract_keys_present": 7,
+    "checks": {
+      "case_id_present": true,
+      "contract_keys_present": true,
+      "claims_have_locator": true,
+      "claims_have_quote": true,
+      "quotes_verified_substring": true,
+      "conflicts_unresolved": true,
+      "gaps_in_coverage": true,
+      "gaps_in_limitations": true,
+      "gaps_in_uncertainty": true,
+      "screening_covers_sources": true,
+      "screening_has_decisions": true,
+      "screening_exclusions_have_reason": true,
+      "themes_have_members": true,
+      "themes_min_two_when_claimed": true,
+      "established_has_no_refutes": true,
+      "conflict_claims_contested": true,
+      "boundary_clean": true,
+      "prisma_balanced": true,
+      "report_consistent": true
+    },
+    "all_checks_passed": true,
+    "report_consistent": true
+  },
+  "output_paths": {
+    "result": "result.json",
+    "review_draft": "review_draft.md",
+    "report": "report.md",
+    "review": "run-review.md",
+    "docx": "research_report.docx",
+    "synthesis_matrix": "synthesis_matrix.csv",
+    "screening_log": "screening_log.csv",
+    "prisma_flow": "prisma_flow.svg",
+    "provenance": "provenance.json",
+    "validation": "validation.json",
+    "work": "work"
+  }
+}
