@@ -243,6 +243,39 @@ def render_report(payload):
     return "\n".join(out)
 
 
+def render_review_draft(payload):
+    """Render the literature-review draft body: synthesis sections only.
+
+    This is the primary deliverable. It deliberately omits the run-report
+    shell (screening/source/stat tables) that ``report.md`` carries.
+    """
+    question = payload.get("question") or "（未提供研究问题）"
+    report = payload.get("report")
+    synthesis = report if isinstance(report, dict) else (payload.get("synthesis") or {})
+    sections = synthesis.get("sections") or []
+
+    out = []
+    out.append("# 文献综述草稿：%s" % question)
+    out.append("")
+    for section in sections:
+        heading = section.get("heading") or ""
+        out.append("## %s" % heading)
+        out.append("")
+        text = section.get("text") or ""
+        if text:
+            out.append(text)
+        out.append("")
+    if not sections:
+        out.append("本次运行未生成综述章节；详见 result.json 的 synthesis 与 errors。")
+        out.append("")
+    out.append("---")
+    out.append("")
+    out.append("本文件仅由 `result.json` 的 `synthesis.sections` 渲染，是本次综述草稿的正文；"
+               "引用、冲突与覆盖细节见 `result.json` 与 `run-review.md`。")
+    out.append("")
+    return "\n".join(out)
+
+
 def render_review(payload):
     case_id = payload.get("case_id") or "unknown"
     status = payload.get("status") or "unknown"
