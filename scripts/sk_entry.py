@@ -4,9 +4,11 @@
 Usage (harness):
     python /skills/weekly-skill/scripts/run_skill.py --input /input --work /app/work --out /app/output
 
-The CLI always exits 0 and always attempts to write result.json, report.md and
-run-review.md. It uses the Python standard library only, never accesses the
-network, and is deterministic for a given input tree.
+The CLI always exits 0 and always attempts to write result.json, review_draft.md,
+report.md, run-review.md and the secondary artifacts (synthesis_matrix.csv,
+screening_log.csv, prisma_flow.svg, provenance.json, validation.json,
+research_report.docx). It uses the Python standard library only, never accesses
+the network, and is deterministic for a given input tree.
 """
 
 import sys
@@ -26,8 +28,18 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import sk_analyze
+import sk_artifacts
 import sk_ingest
 import sk_render
+
+# Wording that oversteps the provided-corpus boundary. Only agent-authored
+# framing text is scanned (quoted source spans are stripped first).
+GLOBAL_PAT = re.compile(
+    r"(全球|国际|世界)(首创|首次|领先|空白)|国内(首创|空白)|无人研究|尚无人(研究|报道)"
+    r"|填补.{0,6}空白|world[- ]?first|first[- ]?ever|globally (novel|new)"
+    r"|state[- ]of[- ]the[- ]art (overall|globally)"
+    r"|已完成(了)?(全部|系统)?实验|实验(已|均)完成|experiments? (were |have been )?(completed|finished)",
+    re.IGNORECASE)
 
 DEFAULT_INPUT = "/input"
 DEFAULT_WORK = "/app/work"
@@ -172,6 +184,123 @@ def apply_contract(payload, case):
     return payload
 
 
+def _strip_quoted(text):
+    text = re.sub(r"“[^”]*”", "", text or "")
+    return re.sub(r'"[^"]*"', "", text)
+
+
+def _strip_attribution(text):
+    """Drop the ``[S1] Title：`` prefix of embedded claims so that a source
+    title alone cannot trip the boundary scan."""
+    return re.sub(r"\[[^\]\s]{1,40}\][^：]{0,200}：", " ", text or "")
+
+
+def boundary_scan(payload):
+    """Scan agent-authored framing text for wording that oversteps the corpus."""
+    samples = []
+    for claim in payload.get("claims") or []:
+        samples.append(("claim", claim.get("claim_id"),
+                        _strip_quoted(_strip_attribution(claim.get("text") or ""))))
+    for theme in payload.get("themes") or []:
+        framed = " ".join([theme.get("theme") or "", theme.get("definition") or "",
+                           theme.get("boundary") or ""])
+        samples.append(("theme", theme.get("theme_id"), _strip_quoted(framed)))
+    report = payload.get("report")
+    synthesis = report if isinstance(report, dict) else (payload.get("synthesis") or {})
+    for section in synthesis.get("sections") or []:
+        framed = " ".join([section.get("heading") or "", section.get("text") or ""])
+        samples.append(("section", section.get("section_id"),
+                        _strip_quoted(_strip_attribution(framed))))
+    hits = []
+    for kind, identifier, text in samples:
+        match = GLOBAL_PAT.search(text)
+        if match:
+            hits.append({"kind": kind, "id": identifier, "match": match.group(0)})
+    return {"scanned": len(samples), "ok": not hits, "hits": hits[:20]}
+
+
+def compute_prisma(payload):
+    sources = payload.get("sources") or []
+    screening = payload.get("screening") or []
+    n_identified = len(sources)
+    n_duplicates = sum(1 for source in sources if source.get("duplicate_of"))
+    n_screened = max(0, n_identified - n_duplicates)
+    n_excluded = sum(1 for entry in screening
+                     if entry.get("decision") == "exclude"
+                     and entry.get("criterion_code") != "duplicate_record")
+    n_included = max(0, n_screened - n_excluded)
+    return {
+        "n_identified": n_identified,
+        "n_duplicates": n_duplicates,
+        "n_screened": n_screened,
+        "n_excluded_by_code": n_excluded,
+        "n_included": n_included,
+    }
+
+
+def _prisma_balanced(payload):
+    counts = payload.get("prisma") or {}
+    usable = sum(1 for source in payload.get("sources") or []
+                 if source.get("included_in_evidence", True))
+    if counts.get("n_identified", 0) - counts.get("n_duplicates", 0) != counts.get("n_screened", 0):
+        return False
+    if counts.get("n_screened", 0) - counts.get("n_excluded_by_code", 0) != counts.get("n_included", 0):
+        return False
+    return counts.get("n_included", 0) == usable
+
+
+def _established_has_no_refutes(payload):
+    claims = {claim.get("claim_id"): claim for claim in payload.get("claims") or []}
+    for theme in payload.get("themes") or []:
+        if theme.get("evidence_strength") != "established":
+            continue
+        for claim_id in theme.get("supporting_claim_ids") or []:
+            if (claims.get(claim_id) or {}).get("direction") in {"refutes", "mixed"}:
+                return False
+    return True
+
+
+def _conflict_claims_contested(payload):
+    members = set()
+    for conflict in payload.get("conflicts") or []:
+        for position in conflict.get("positions") or []:
+            members.add(position.get("claim_id"))
+    return all(claim.get("support_level") == "contested"
+               for claim in payload.get("claims") or []
+               if claim.get("claim_id") in members)
+
+
+def build_gates(checks):
+    return [
+        {"gate": "case_contract",
+         "passed": bool(checks.get("case_id_present") and checks.get("contract_keys_present")),
+         "detail": "case_id 存在且 output_contract 每个字段都在顶层。"},
+        {"gate": "quote_integrity",
+         "passed": bool(checks.get("claims_have_locator")
+                        and checks.get("claims_have_quote")
+                        and checks.get("quotes_verified_substring")),
+         "detail": "每条 claim 有 locator 与 quote，且 quote 是证据原文的精确子串。"},
+        {"gate": "strength_consistency",
+         "passed": bool(checks.get("established_has_no_refutes")
+                        and checks.get("conflict_claims_contested")),
+         "detail": "established 主题不含相反/混合证据；冲突 claim 标为 contested。"},
+        {"gate": "prisma_balance",
+         "passed": bool(checks.get("prisma_balanced")),
+         "detail": "identified - duplicates = screened；screened - excluded = included 且等于进入证据的来源数。"},
+    ]
+
+
+def build_self_check(checks):
+    return [{"item": key, "template_value": bool(value), "match": bool(value)}
+            for key, value in sorted(checks.items())]
+
+
+def compute_verdict(checks, gates):
+    passed = all(bool(value) for value in checks.values()) and all(
+        gate.get("passed") for gate in gates)
+    return "pass" if passed else "fail"
+
+
 def compute_verification(payload):
     claims = payload.get("claims") or []
     evidence = payload.get("evidence") or []
@@ -204,6 +333,15 @@ def compute_verification(payload):
     present = contract.get("present") or {}
     screening = payload.get("screening") or []
     themes = payload.get("themes") or []
+
+    payload["prisma"] = compute_prisma(payload)
+    payload["quote_check_summary"] = {
+        "checked": len(claims),
+        "verified": verified,
+        "not_found": len(claims) - verified,
+    }
+    payload["boundary"] = boundary_scan(payload)
+
     checks = {
         "case_id_present": bool(payload.get("case_id") and payload.get("case_id") != "unknown"),
         "contract_keys_present": all(bool(present.get(name)) for name in provided),
@@ -217,8 +355,15 @@ def compute_verification(payload):
         "screening_covers_sources": len(screening) == len(payload.get("sources") or []),
         "screening_has_decisions": all(entry.get("decision") in {"include", "exclude"}
                                        for entry in screening),
+        "screening_exclusions_have_reason": all(
+            str(entry.get("reason") or "").strip()
+            for entry in screening if entry.get("decision") == "exclude"),
         "themes_have_members": all(theme.get("member_sources") for theme in themes),
         "themes_min_two_when_claimed": len(themes) >= 2 or not claims,
+        "established_has_no_refutes": _established_has_no_refutes(payload),
+        "conflict_claims_contested": _conflict_claims_contested(payload),
+        "boundary_clean": bool(payload["boundary"].get("ok")),
+        "prisma_balanced": _prisma_balanced(payload),
     }
     verification = {
         "claims_total": len(claims),
@@ -237,7 +382,23 @@ def compute_verification(payload):
         "checks": checks,
         "all_checks_passed": all(checks.values()),
     }
+    payload["gates"] = build_gates(checks)
+    payload["self_check"] = build_self_check(checks)
+    payload["validator_verdict"] = compute_verdict(checks, payload["gates"])
     return verification
+
+
+def finalize_verification(payload, report_consistent):
+    verification = payload.get("verification") or {}
+    checks = dict(verification.get("checks") or {})
+    checks["report_consistent"] = bool(report_consistent)
+    verification["checks"] = checks
+    verification["report_consistent"] = bool(report_consistent)
+    verification["all_checks_passed"] = all(checks.values())
+    payload["verification"] = verification
+    payload["gates"] = build_gates(checks)
+    payload["self_check"] = build_self_check(checks)
+    payload["validator_verdict"] = compute_verdict(checks, payload["gates"])
 
 
 def collect_files(input_dir, case_path, task_path):
@@ -413,6 +574,8 @@ def build_payload(case, case_path, input_dir, task_text, files, policy, case_err
     uncertainty = sk_analyze.build_uncertainty(
         question, sources, conflicts, coverage, duplicates, unreadable, derived,
         criteria_declared, low_confidence_sources, status)
+    for item in uncertainty:
+        item.setdefault("human_confirm", True)
     synthesis = sk_analyze.build_synthesis(
         question, sub_questions, evidence, claims, conflicts, coverage, sources,
         uncertainty, status, themes)
@@ -571,7 +734,8 @@ def failure_payload(case, case_path, error, files):
         "synthesis": {"sections": [], "narrative": "", "citation_format": "[source_id | locator]",
                       "claim_level": True, "status_note": "failed run"},
         "limitations": [{"type": "failed_run", "detail": "流程异常或输入损坏，未形成可复核综述。"}],
-        "uncertainty": [{"type": "failed_run", "detail": "未完成证据绑定；详见 errors。"}],
+        "uncertainty": [{"type": "failed_run", "detail": "未完成证据绑定；详见 errors。",
+                         "human_confirm": True}],
         "run_log": [{"step": "run", "status": "failed",
                      "detail": "%s: %s" % (type(error).__name__, str(error)[:200])}],
         "criteria": {},
@@ -609,14 +773,28 @@ def write_json(path, payload):
     atomic_write_text(path, json.dumps(payload, ensure_ascii=False, indent=2, default=str) + "\n")
 
 
+def output_path_names(result_name="result.json"):
+    return {
+        "result": result_name,
+        "review_draft": "review_draft.md",
+        "report": "report.md",
+        "review": "run-review.md",
+        "docx": "research_report.docx",
+        "synthesis_matrix": "synthesis_matrix.csv",
+        "screening_log": "screening_log.csv",
+        "prisma_flow": "prisma_flow.svg",
+        "provenance": "provenance.json",
+        "validation": "validation.json",
+        "work": "work",
+    }
+
+
 def write_outputs(payload, out_dir, work_dir):
     out_dir = Path(out_dir)
     work_dir = Path(work_dir)
-    result_path = out_dir / "result.json"
-    report_path = out_dir / "report.md"
-    review_path = out_dir / "run-review.md"
     try:
         out_dir.mkdir(parents=True, exist_ok=True)
+        result_path = out_dir / "result.json"
     except OSError:
         out_dir = work_dir
         try:
@@ -624,26 +802,37 @@ def write_outputs(payload, out_dir, work_dir):
         except OSError:
             out_dir = Path.cwd()
         result_path = out_dir / "result.json"
-        report_path = out_dir / "report.md"
-        review_path = out_dir / "run-review.md"
+    report_path = out_dir / "report.md"
+    review_draft_path = out_dir / "review_draft.md"
+    review_path = out_dir / "run-review.md"
+
     write_json(result_path, payload)
     report_text = sk_render.render_report(payload)
     atomic_write_text(report_path, report_text)
+    atomic_write_text(review_draft_path, sk_render.render_review_draft(payload))
+    atomic_write_text(review_path, sk_render.render_review(payload))
+
     consistent = False
     try:
         reloaded = json.loads(result_path.read_text(encoding="utf-8"))
         consistent = sk_render.render_report(reloaded) == report_path.read_text(encoding="utf-8")
     except (OSError, ValueError, TypeError):
         consistent = False
-    payload["verification"]["report_consistent"] = bool(consistent)
-    payload["verification"]["all_checks_passed"] = bool(
-        all(payload["verification"].get("checks", {}).values()) and consistent)
+    finalize_verification(payload, consistent)
     write_json(result_path, payload)
-    atomic_write_text(review_path, sk_render.render_review(payload))
+
+    artifacts = []
+    try:
+        artifacts = sk_artifacts.write_all(payload, out_dir)
+    except (OSError, ValueError, TypeError, KeyError):
+        artifacts = []
+
     return {
         "result": Path(result_path).name,
+        "review_draft": str(review_draft_path),
         "report": str(report_path),
         "review": str(review_path),
+        "artifacts": [item.get("name") for item in artifacts],
     }
 
 
@@ -673,12 +862,7 @@ def run(input_arg, work_dir, out_arg):
     case, case_errors = load_case(case_path)
     policy = sk_ingest.load_policy(HERE.parent)
     payload = build_payload(case, case_path, input_dir, task_text, files, policy, case_errors)
-    payload["output_paths"] = {
-        "result": Path(result_path).name,
-        "report": "report.md",
-        "review": "run-review.md",
-        "work": "work",
-    }
+    payload["output_paths"] = output_path_names(Path(result_path).name)
     return payload, out_dir
 
 
@@ -712,22 +896,14 @@ def main(argv=None):
         policy = sk_ingest.load_policy(HERE.parent)
         payload = build_payload(case, case_path, input_dir, task_text, files, policy, case_errors)
         out_dir, result_path = resolve_out(args.out)
-        payload["output_paths"] = {
-            "result": Path(result_path).name,
-            "report": "report.md",
-            "review": "run-review.md",
-            "work": "work",
-        }
+        payload["output_paths"] = output_path_names(Path(result_path).name)
     except Exception as exc:
         try:
             out_dir, _ = resolve_out(args.out)
         except Exception:
             out_dir = Path(args.out)
         payload = failure_payload(case, case_path, exc, files)
-        payload["output_paths"] = {"result": "result.json",
-                                   "report": "report.md",
-                                   "review": "run-review.md",
-                                   "work": "work"}
+        payload["output_paths"] = output_path_names("result.json")
     try:
         written = write_outputs(payload, out_dir, work_dir)
     except Exception as exc:
