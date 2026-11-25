@@ -114,6 +114,8 @@ def fallback(argv, exc):
         "question": "",
         "sub_questions": [],
         "sources": [],
+        "screening": [],
+        "themes": [],
         "evidence": [],
         "claims": [],
         "conflicts": [],
