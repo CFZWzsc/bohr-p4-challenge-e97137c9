@@ -88,6 +88,41 @@
     "peer_reviewed_points": 2.0,
     "study_design_points": 1.0
   },
+  "themes": {
+    "similarity_threshold": 0.3,
+    "max_themes": 6,
+    "anchor_terms": 4,
+    "synonyms": {
+      "hba1c": ["hba1c", "glycated", "haemoglobin", "hemoglobin", "glycaemic", "glycemic", "glucose"],
+      "adherence": ["adherence", "compliance"],
+      "implementation": ["implementation", "implementing", "training", "clinician", "care"],
+      "efficacy": ["efficacy", "effectiveness", "reduction", "improvement", "significant"],
+      "safety": ["safety", "adverse", "hypoglycaemia", "hypoglycemia"]
+    },
+    "labels": {
+      "hba1c": "血糖结局（HbA1c）",
+      "adherence": "依从性",
+      "implementation": "实施与照护",
+      "efficacy": "疗效与结局",
+      "safety": "安全性"
+    }
+  },
+  "screening": {
+    "min_text_chars": 40,
+    "non_empirical_designs": [
+      "narrative review", "editorial", "commentary", "comment", "letter",
+      "opinion", "perspective", "viewpoint", "protocol", "news"
+    ],
+    "no_primary_outcome_patterns": [
+      "no primary glycaemic outcome data", "no primary glycemic outcome data",
+      "no primary outcome data", "no primary outcome", "no clinical outcome data",
+      "no outcome data", "does not report primary outcome", "无原始结局数据", "无主要结局数据"
+    ],
+    "result_cue_patterns": [
+      "p<", "p =", "p=", "95% ci", "confidence interval", "n=", "odds ratio",
+      "hazard ratio", "relative risk", "significant", "%"
+    ]
+  },
   "limits": {
     "max_files": 50,
     "max_file_bytes": 500000,
