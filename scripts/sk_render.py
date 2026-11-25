@@ -35,6 +35,8 @@ def render_report(payload):
     question = payload.get("question") or "（未提供研究问题）"
     sub_questions = payload.get("sub_questions") or []
     sources = payload.get("sources") or []
+    screening = payload.get("screening") or []
+    themes = payload.get("themes") or []
     evidence = payload.get("evidence") or []
     claims = payload.get("claims") or []
     conflicts = payload.get("conflicts") or []
@@ -53,6 +55,9 @@ def render_report(payload):
     out.append("- 研究问题：%s" % question)
     out.append("- 来源数：%d；证据行：%d；论断：%d；冲突：%d；覆盖缺口：%d" % (
         len(sources), len(evidence), len(claims), len(conflicts), len(coverage.get("gaps") or [])))
+    out.append("- 筛选：纳入 %d、排除 %d；主题：%d 个" % (
+        sum(1 for entry in screening if entry.get("decision") == "include"),
+        sum(1 for entry in screening if entry.get("decision") == "exclude"), len(themes)))
     out.append("")
     out.append("## 1. 子问题与覆盖")
     out.append("")
@@ -72,7 +77,25 @@ def render_report(payload):
     else:
         out.append("未生成子问题。")
     out.append("")
-    out.append("## 2. 来源清单")
+    out.append("## 2. 筛选（screening）")
+    out.append("")
+    if screening:
+        out.append("| 来源 | 轮次 | 决定 | 准则代码 | 准则来源 | 准则原文 | 核对字段 | 理由 |")
+        out.append("|---|---|---|---|---|---|---|---|")
+        for entry in screening:
+            out.append("| %s | %s | %s | `%s` | `%s` | %s | %s | %s |" % (
+                _cell(entry.get("source_id"), 20),
+                _cell(entry.get("round"), 10),
+                _cell(entry.get("decision"), 12),
+                _cell(entry.get("criterion_code"), 40),
+                _cell(entry.get("criterion_source"), 40),
+                _cell(entry.get("criteria_text"), 80),
+                _cell(_list(entry.get("checked_fields")), 60),
+                _cell(entry.get("reason"), 160)))
+    else:
+        out.append("本次运行未生成筛选记录。")
+    out.append("")
+    out.append("## 3. 来源清单")
     out.append("")
     if sources:
         out.append("| 来源 | 标题 | 年份 | 类型 | 可靠性 | 定位前缀 | 低置信度 |")
@@ -90,7 +113,7 @@ def render_report(payload):
     else:
         out.append("未读取到来源。")
     out.append("")
-    out.append("## 3. 证据与论断")
+    out.append("## 4. 证据与论断")
     out.append("")
     if claims:
         evidence_map = {row.get("evidence_id"): row for row in evidence}
@@ -117,7 +140,23 @@ def render_report(payload):
     else:
         out.append("本次运行未生成可定位论断。")
         out.append("")
-    out.append("## 4. 冲突（未裁决）")
+    out.append("## 5. 主题归纳（Theme induction）")
+    out.append("")
+    if themes:
+        for theme in themes:
+            out.append("### %s：%s" % (theme.get("theme_id"), theme.get("theme")))
+            out.append("")
+            out.append("- 定义：%s" % (theme.get("definition") or ""))
+            out.append("- 成员文献：%s" % _list(theme.get("member_sources")))
+            out.append("- 支撑结论：%s" % _list(theme.get("supporting_claim_ids")))
+            out.append("- 证据强度：`%s`（%s）" % (
+                theme.get("evidence_strength"), theme.get("strength_basis") or ""))
+            out.append("- 边界：%s" % (theme.get("boundary") or ""))
+            out.append("")
+    else:
+        out.append("本次运行未归纳出主题。")
+        out.append("")
+    out.append("## 6. 冲突（未裁决）")
     out.append("")
     if conflicts:
         for conflict in conflicts:
@@ -139,7 +178,7 @@ def render_report(payload):
     else:
         out.append("未检测到相反结论的并列冲突。")
         out.append("")
-    out.append("## 5. 覆盖与空白")
+    out.append("## 7. 覆盖与空白")
     out.append("")
     summary = coverage.get("summary") or {}
     out.append("子问题 %s 个：covered %s、thin %s、gap %s。" % (
@@ -154,7 +193,7 @@ def render_report(payload):
     else:
         out.append("- 无覆盖缺口。")
     out.append("")
-    out.append("## 6. 综合叙述")
+    out.append("## 8. 综合叙述")
     out.append("")
     for section in synthesis.get("sections") or []:
         out.append("### %s" % section.get("heading"))
@@ -166,7 +205,7 @@ def render_report(payload):
             out.append("")
     out.append("引用格式：%s" % (synthesis.get("citation_format") or ""))
     out.append("")
-    out.append("## 7. 局限与不确定性")
+    out.append("## 9. 局限与不确定性")
     out.append("")
     if limitations:
         for item in limitations:
@@ -180,7 +219,7 @@ def render_report(payload):
     else:
         out.append("- 无记录的不确定性。")
     out.append("")
-    out.append("## 8. 运行日志")
+    out.append("## 10. 运行日志")
     out.append("")
     if run_log:
         for entry in run_log:
@@ -189,7 +228,7 @@ def render_report(payload):
     else:
         out.append("- 无运行日志。")
     out.append("")
-    out.append("## 9. 统计")
+    out.append("## 11. 统计")
     out.append("")
     if stats:
         for key in sorted(stats.keys()):
@@ -252,6 +291,21 @@ def render_review(payload):
             _list(item.get("conflict_ids"))))
     if not (coverage.get("items") or []):
         out.append("- 无子问题覆盖记录。")
+    screening = payload.get("screening") or []
+    themes = payload.get("themes") or []
+    out.append("- 筛选记录 %d 条：纳入 %d、排除 %d" % (
+        len(screening),
+        sum(1 for entry in screening if entry.get("decision") == "include"),
+        sum(1 for entry in screening if entry.get("decision") == "exclude")))
+    for entry in screening:
+        out.append("  - %s（round %s）：%s / `%s`" % (
+            entry.get("source_id"), entry.get("round"), entry.get("decision"),
+            entry.get("criterion_code")))
+    out.append("- 主题 %d 个" % len(themes))
+    for theme in themes:
+        out.append("  - %s：%s（成员 %s；结论 %s）" % (
+            theme.get("theme_id"), theme.get("theme"),
+            _list(theme.get("member_sources")), _list(theme.get("supporting_claim_ids"))))
     out.append("")
     out.append("## 3. 证据定位索引（逐条核验）")
     out.append("")
