@@ -30,7 +30,7 @@ python scripts/run_skill.py --input examples/demo-case --out /app/output/result.
 演示案例的预期结构（数值以实际运行为准）：
 
 - `status = success`
-- `sources` 3 条，`evidence` 5 条，`claims` 5 条
+- `sources` 3 条，`evidence` 4 条，`claims` 4 条
 - `conflicts` 1 组：Q1 的 S1“显著降低 HbA1c” vs S2“无显著差异”，`resolution = unresolved`
 - `coverage`：Q1 covered、Q2 covered、Q3 gap
 - Q3 同时出现在 `coverage.gaps`、`limitations`（`type=evidence_gap`）与 `uncertainty`
@@ -62,9 +62,14 @@ python scripts/run_skill.py --input examples/demo-case --out /app/output/result.
 
 | 文件 | 用途 |
 |---|---|
-| `result.json` | 机器可读完整结果（question、sub_questions、sources、evidence、claims、conflicts、coverage、synthesis、limitations、uncertainty、run_log） |
-| `report.md` | 人类可读报告，仅由 `result.json` 渲染 |
+| `review_draft.md` | **交付主体**：综述草稿正文，仅由 `synthesis.sections` 渲染 |
+| `result.json` | 机器可读完整结果（question、sub_questions、sources、evidence、claims、conflicts、coverage、synthesis、limitations、uncertainty、run_log、prisma、gates、self_check、validator_verdict） |
+| `report.md` | 人类可读运行报告，仅由 `result.json` 渲染 |
 | `run-review.md` | 逐条 claim 的 locator/quote 核验索引、契约核对与复核步骤 |
+| `synthesis_matrix.csv` / `screening_log.csv` | 论断-来源-定位与筛选决定的对账表 |
+| `prisma_flow.svg` | PRISMA 计数流程图 |
+| `provenance.json` / `validation.json` | 来源 sha256 与 key-level 溯源；门禁与自检摘要 |
+| `research_report.docx` | 纯标准库 OOXML 生成的 Word 草稿 |
 
 ## 5. 复核演示
 
